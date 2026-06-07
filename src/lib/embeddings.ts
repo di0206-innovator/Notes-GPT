@@ -1,14 +1,16 @@
-import OpenAI from 'openai';
+import { google } from '@ai-sdk/google';
+import { embedMany } from 'ai';
 
-const openai = new OpenAI({
-  apiKey: process.env.OPENAI_API_KEY || 'mock-key-for-build',
-});
+// Ensure the Google Generative AI SDK picks up the correct environment variable
+if (!process.env.GOOGLE_GENERATIVE_AI_API_KEY && process.env.GEMINI_API_KEY) {
+  process.env.GOOGLE_GENERATIVE_AI_API_KEY = process.env.GEMINI_API_KEY;
+}
 
-const EMBEDDING_MODEL = 'text-embedding-3-small';
-const MAX_BATCH_SIZE = 100; // OpenAI allows up to 2048 inputs, but we keep batches manageable
+const EMBEDDING_MODEL = 'gemini-embedding-2';
+const MAX_BATCH_SIZE = 100;
 
 /**
- * Generate embeddings for an array of text strings.
+ * Generate embeddings for an array of text strings using Gemini.
  * Returns an array of number[] vectors in the same order.
  */
 export async function generateEmbeddings(texts: string[]): Promise<number[][]> {
@@ -18,16 +20,12 @@ export async function generateEmbeddings(texts: string[]): Promise<number[][]> {
   for (let i = 0; i < texts.length; i += MAX_BATCH_SIZE) {
     const batch = texts.slice(i, i + MAX_BATCH_SIZE);
 
-    const response = await openai.embeddings.create({
-      model: EMBEDDING_MODEL,
-      input: batch,
+    const { embeddings } = await embedMany({
+      model: google.textEmbeddingModel(EMBEDDING_MODEL),
+      values: batch,
     });
 
-    const batchEmbeddings = response.data
-      .sort((a, b) => a.index - b.index)
-      .map((item) => item.embedding);
-
-    allEmbeddings.push(...batchEmbeddings);
+    allEmbeddings.push(...embeddings);
   }
 
   return allEmbeddings;
@@ -40,3 +38,4 @@ export async function generateQueryEmbedding(query: string): Promise<number[]> {
   const [embedding] = await generateEmbeddings([query]);
   return embedding;
 }
+

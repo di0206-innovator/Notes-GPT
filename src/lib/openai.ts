@@ -1,32 +1,28 @@
-import OpenAI from 'openai';
+import { google } from '@ai-sdk/google';
+import { generateText } from 'ai';
 
-// Ensure this is not used in Edge Runtime if using file system features, 
-// but for standard OpenAI API calls, it's fine.
-if (!process.env.OPENAI_API_KEY) {
-  console.warn("OPENAI_API_KEY is missing from environment variables.");
+// Ensure the Google Generative AI SDK picks up the correct environment variable
+if (!process.env.GOOGLE_GENERATIVE_AI_API_KEY && process.env.GEMINI_API_KEY) {
+  process.env.GOOGLE_GENERATIVE_AI_API_KEY = process.env.GEMINI_API_KEY;
 }
 
-export const openai = new OpenAI({
-  apiKey: process.env.OPENAI_API_KEY || 'mock-key-for-build',
-});
-
-export async function generateEmbedding(text: string): Promise<number[]> {
-  const response = await openai.embeddings.create({
-    model: 'text-embedding-3-small',
-    input: text.replace(/\n/g, ' '),
-  });
-  
-  return response.data[0].embedding;
+if (!process.env.GOOGLE_GENERATIVE_AI_API_KEY) {
+  console.warn("GOOGLE_GENERATIVE_AI_API_KEY (or GEMINI_API_KEY) is missing from environment variables.");
 }
 
 export async function generateChatResponse(
   messages: Array<{ role: 'user' | 'assistant' | 'system'; content: string }>
 ): Promise<string> {
-  const response = await openai.chat.completions.create({
-    model: 'gpt-4o-mini',
-    messages: messages as OpenAI.ChatCompletionMessageParam[],
+  const systemMessage = messages.find((m) => m.role === 'system');
+  const otherMessages = messages.filter((m) => m.role !== 'system');
+
+  const { text } = await generateText({
+    model: google('gemini-2.5-flash'),
+    system: systemMessage?.content,
+    messages: otherMessages as any[],
     temperature: 0.2,
   });
   
-  return response.choices[0].message.content || '';
+  return text || '';
 }
+

@@ -1,4 +1,4 @@
-import { openai } from './openai';
+import { generateChatResponse } from './openai';
 import { getDocumentChunks, StoredChunk } from './vector-store';
 
 export interface Flashcard {
@@ -88,13 +88,7 @@ Format requirements:
 Source Document Excerpts:
 ${context}`;
 
-  const response = await openai.chat.completions.create({
-    model: 'gpt-4o-mini',
-    messages: [{ role: 'user', content: prompt }],
-    temperature: 0.2,
-  });
-
-  return response.choices[0]?.message?.content || '';
+  return generateChatResponse([{ role: 'user', content: prompt }]);
 }
 
 /**
@@ -115,13 +109,7 @@ Ensure:
 Source Document Excerpts:
 ${context}`;
 
-  const response = await openai.chat.completions.create({
-    model: 'gpt-4o-mini',
-    messages: [{ role: 'user', content: prompt }],
-    temperature: 0.2,
-  });
-
-  return response.choices[0]?.message?.content || '';
+  return generateChatResponse([{ role: 'user', content: prompt }]);
 }
 
 /**
@@ -143,19 +131,14 @@ Ensure all flashcards represent high-yield exam concepts and formulas from the n
 Source Document Excerpts:
 ${context}`;
 
-  const response = await openai.chat.completions.create({
-    model: 'gpt-4o-mini',
-    messages: [{ role: 'user', content: prompt }],
-    temperature: 0.2,
-  });
-
-  const content = response.choices[0]?.message?.content?.trim() || '[]';
+  const content = await generateChatResponse([{ role: 'user', content: prompt }]);
+  const trimmed = content.trim();
   try {
     // Strip markdown JSON wrappers if present
-    const jsonStr = content.replace(/^```json/, '').replace(/```$/, '').trim();
+    const jsonStr = trimmed.replace(/^```json/, '').replace(/```$/, '').trim();
     return JSON.parse(jsonStr) as Flashcard[];
   } catch {
-    console.error('Failed to parse flashcards JSON:', content);
+    console.error('Failed to parse flashcards JSON:', trimmed);
     return [];
   }
 }
@@ -187,13 +170,7 @@ Ensure:
 Source Document Excerpts:
 ${context}`;
 
-  const response = await openai.chat.completions.create({
-    model: 'gpt-4o-mini',
-    messages: [{ role: 'user', content: prompt }],
-    temperature: 0.2,
-  });
-
-  const content = response.choices[0]?.message?.content || '';
+  const content = await generateChatResponse([{ role: 'user', content: prompt }]);
   const parts = content.split('===ANSWER_KEY_START===');
   
   return {
@@ -201,6 +178,7 @@ ${context}`;
     key: parts[1]?.trim() || 'No answer key generated.'
   };
 }
+
 
 /**
  * Main Orchestrator: Generate the full Study Kit.

@@ -1,7 +1,7 @@
 'use client';
 
-import { useState, useRef, useEffect } from 'react';
-import { Sparkles, Send, Bot, User } from 'lucide-react';
+import React, { useState, useRef, useEffect } from 'react';
+import { Send, Terminal, User, Sparkles } from 'lucide-react';
 import { Markdown } from './Markdown';
 import { searchLocalChunks } from '@/lib/indexed-db-store';
 import { getLocalAISupport, generateLocalResponse } from '@/lib/local-ai';
@@ -12,10 +12,10 @@ type Message = {
 };
 
 const SUGGESTED_CHIPS = [
-  { label: '📝 Summarize Notes', prompt: 'Please summarize the core concepts of the uploaded documents.' },
-  { label: '✏️ Generate Quiz', prompt: 'Create a practice quiz with 3 MCQs and 2 short answer questions based on the notes.' },
-  { label: '🎯 Predict Exams', prompt: 'Based on these notes, what are the most likely exam questions? Categorize them by priority.' },
-  { label: '💡 Key Terms', prompt: 'Provide a list of all key definitions and mathematical formulas found in the documents.' },
+  { label: '[ 📝 SUMMARIZE ]', prompt: 'Please summarize the core concepts of the uploaded documents.' },
+  { label: '[ ✏️ QUIZ ]', prompt: 'Create a practice quiz with 3 MCQs and 2 short answer questions based on the notes.' },
+  { label: '[ 🎯 EXAM_PRED ]', prompt: 'Based on these notes, what are the most likely exam questions? Categorize them by priority.' },
+  { label: '[ 💡 EQUATIONS ]', prompt: 'Provide a list of all key definitions and mathematical formulas found in the documents.' },
 ];
 
 interface ChatInterfaceProps {
@@ -55,7 +55,6 @@ export default function ChatInterface({ mode, sessionId }: ChatInterfaceProps) {
 
     try {
       if (mode === 'local') {
-        // Retrieve local context via IndexedDB search
         const localChunks = await searchLocalChunks(textToSend, 5);
         
         let contextText = '';
@@ -77,7 +76,6 @@ Here is the retrieved context:
 ${contextText || 'No local document context available.'}
 `;
 
-        // Check Local AI Support
         const support = await getLocalAISupport();
         if (!support.available) {
           throw new Error(`Local AI is not available: ${support.message}`);
@@ -138,61 +136,63 @@ ${contextText || 'No local document context available.'}
   };
 
   return (
-    <div className="flex flex-col h-full bg-slate-900/40 backdrop-blur-md rounded-2xl border border-white/10 overflow-hidden shadow-2xl relative">
-      {/* Top Border Glow */}
-      <div className="absolute top-0 inset-x-0 h-px bg-gradient-to-r from-transparent via-purple-500/50 to-transparent" />
-
+    <div className="flex flex-col h-full border-2 border-white bg-black retro-shadow relative overflow-hidden">
+      
       {/* Header */}
-      <div className="flex items-center justify-between px-6 py-4 border-b border-white/5 bg-white/[0.01]">
-        <div className="flex items-center gap-2.5">
-          <div className="w-2.5 h-2.5 rounded-full bg-purple-500 animate-pulse shadow-[0_0_8px_rgba(168,85,247,0.5)]" />
-          <h2 className="text-sm font-bold text-white uppercase tracking-wider">AI Study Companion</h2>
+      <div className="flex items-center justify-between px-6 py-4 border-b-2 border-white bg-black">
+        <div className="flex items-center gap-2">
+          <div className="w-3 h-3 border border-white bg-white animate-pulse" />
+          <h2 className="text-xs font-bold text-white uppercase tracking-widest font-mono">
+            [ REMOTE_STUDY_SHELL ]
+          </h2>
         </div>
+        <span className="text-[10px] uppercase font-mono text-white/50">
+          Mode: {mode.toUpperCase()}
+        </span>
       </div>
 
       {/* Message History Area */}
-      <div className="flex-1 p-6 overflow-y-auto space-y-6 custom-scrollbar">
-        {messages.map((msg, idx) => (
-          <div key={idx} className={`flex gap-3.5 ${msg.role === 'user' ? 'justify-end' : 'justify-start'}`}>
-            {msg.role !== 'user' && (
-              <div className="w-8 h-8 rounded-xl bg-purple-600/10 border border-purple-500/20 flex items-center justify-center text-purple-400 flex-shrink-0 mt-0.5">
-                <Bot className="w-4 h-4" />
+      <div className="flex-1 p-6 overflow-y-auto space-y-6 custom-scrollbar bg-black">
+        {messages.map((msg, idx) => {
+          const isUser = msg.role === 'user';
+          return (
+            <div key={idx} className={`flex gap-4 ${isUser ? 'justify-end' : 'justify-start'}`}>
+              {!isUser && (
+                <div className="w-8 h-8 border border-white bg-black flex items-center justify-center text-white flex-shrink-0 mt-1">
+                  <Terminal className="w-4 h-4" />
+                </div>
+              )}
+              <div
+                className={`max-w-[82%] p-4 border-2 border-white text-xs md:text-sm font-mono leading-relaxed ${
+                  isUser
+                    ? 'bg-white text-black border-white retro-shadow-black'
+                    : 'bg-black text-white border-white'
+                }`}
+              >
+                {isUser ? (
+                  <p className="whitespace-pre-wrap">{msg.content}</p>
+                ) : (
+                  <div className="prose prose-invert max-w-none prose-sm leading-relaxed font-mono">
+                    <Markdown content={msg.content} />
+                  </div>
+                )}
               </div>
-            )}
-            <div
-              className={`max-w-[82%] rounded-2xl px-4 py-3 shadow-md backdrop-blur-sm text-xs md:text-sm leading-relaxed ${
-                msg.role === 'user'
-                  ? 'bg-gradient-to-br from-purple-600 to-indigo-700 text-white rounded-tr-sm border border-purple-400/20'
-                  : 'bg-slate-800/80 text-slate-200 rounded-tl-sm border border-white/5'
-              }`}
-            >
-              {msg.role === 'user' ? (
-                <p className="whitespace-pre-wrap">{msg.content}</p>
-              ) : (
-                <div className="prose prose-invert max-w-none prose-sm">
-                  <Markdown content={msg.content} />
+              {isUser && (
+                <div className="w-8 h-8 border border-white bg-white flex items-center justify-center text-black flex-shrink-0 mt-1">
+                  <User className="w-4 h-4" />
                 </div>
               )}
             </div>
-            {msg.role === 'user' && (
-              <div className="w-8 h-8 rounded-xl bg-indigo-600/10 border border-indigo-500/20 flex items-center justify-center text-indigo-400 flex-shrink-0 mt-0.5">
-                <User className="w-4 h-4" />
-              </div>
-            )}
-          </div>
-        ))}
+          );
+        })}
 
         {isLoading && (
-          <div className="flex gap-3.5 justify-start">
-            <div className="w-8 h-8 rounded-xl bg-purple-600/10 border border-purple-500/20 flex items-center justify-center text-purple-400 flex-shrink-0 mt-0.5 animate-pulse">
-              <Bot className="w-4 h-4" />
+          <div className="flex gap-4 justify-start">
+            <div className="w-8 h-8 border border-white bg-black flex items-center justify-center text-white flex-shrink-0 mt-1 animate-pulse">
+              <Terminal className="w-4 h-4" />
             </div>
-            <div className="bg-slate-800/80 text-slate-200 rounded-2xl rounded-tl-sm px-5 py-3 border border-white/5">
-              <div className="flex space-x-1.5 py-1">
-                <div className="w-2 h-2 bg-purple-500 rounded-full animate-bounce" />
-                <div className="w-2 h-2 bg-indigo-500 rounded-full animate-bounce" style={{ animationDelay: '0.15s' }} />
-                <div className="w-2 h-2 bg-pink-500 rounded-full animate-bounce" style={{ animationDelay: '0.3s' }} />
-              </div>
+            <div className="bg-black text-white border-2 border-white p-4 font-mono text-xs animate-flash">
+              [ ACCESSING COMPREHENSION DIRECTORY... ]
             </div>
           </div>
         )}
@@ -200,7 +200,7 @@ ${contextText || 'No local document context available.'}
       </div>
 
       {/* Suggested chips & Input container */}
-      <div className="p-4 border-t border-white/5 bg-[#0F0F12]/60 backdrop-blur-xl space-y-4">
+      <div className="p-4 border-t-2 border-white bg-black space-y-4">
         {/* Suggested Prompt Chips */}
         <div className="flex items-center gap-2 overflow-x-auto pb-1.5 max-w-4xl mx-auto custom-scrollbar">
           {SUGGESTED_CHIPS.map((chip, idx) => (
@@ -208,9 +208,8 @@ ${contextText || 'No local document context available.'}
               key={idx}
               onClick={() => sendMessage(chip.prompt)}
               disabled={isLoading}
-              className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl border border-white/5 bg-white/[0.02] hover:bg-purple-500/10 hover:border-purple-500/30 text-slate-400 hover:text-purple-300 font-semibold text-[10px] md:text-xs transition-all shadow-sm whitespace-nowrap disabled:opacity-50 disabled:cursor-not-allowed"
+              className="retro-button py-1.5 px-3 text-[10px] font-mono font-bold"
             >
-              <Sparkles className="w-3 h-3 text-purple-400" />
               {chip.label}
             </button>
           ))}
@@ -222,16 +221,16 @@ ${contextText || 'No local document context available.'}
             type="text"
             value={input}
             onChange={(e) => setInput(e.target.value)}
-            placeholder="Ask a follow-up or clarify a topic..."
-            className="flex-1 px-5 py-3.5 bg-slate-900/50 border border-white/10 rounded-xl focus:outline-none focus:ring-2 focus:ring-purple-500/50 focus:border-transparent text-sm text-slate-100 placeholder-slate-400 transition-all shadow-inner"
+            placeholder="Type query or instruction..."
+            className="retro-input flex-1 font-mono text-xs py-3.5 focus:bg-white focus:text-black focus:border-black transition-colors"
             disabled={isLoading}
           />
           <button
             type="submit"
             disabled={isLoading || !input.trim()}
-            className="p-3.5 bg-gradient-to-r from-purple-600 to-indigo-600 text-white rounded-xl hover:from-purple-500 hover:to-indigo-500 focus:outline-none focus:ring-2 focus:ring-purple-500/50 focus:ring-offset-2 focus:ring-offset-slate-950 disabled:opacity-50 disabled:cursor-not-allowed transition-all shadow-lg shadow-purple-500/20 flex-shrink-0 group flex items-center justify-center"
+            className="retro-button py-3.5 px-6 font-mono text-xs flex items-center justify-center"
           >
-            <Send className="w-4 h-4 group-hover:translate-x-0.5 group-hover:-translate-y-0.5 transition-transform" />
+            <Send className="w-4 h-4" />
           </button>
         </form>
       </div>

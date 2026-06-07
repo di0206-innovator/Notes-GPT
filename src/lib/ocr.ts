@@ -1,7 +1,13 @@
-import { openai } from './openai';
+import { google } from '@ai-sdk/google';
+import { generateText } from 'ai';
+
+// Ensure the Google Generative AI SDK picks up the correct environment variable
+if (!process.env.GOOGLE_GENERATIVE_AI_API_KEY && process.env.GEMINI_API_KEY) {
+  process.env.GOOGLE_GENERATIVE_AI_API_KEY = process.env.GEMINI_API_KEY;
+}
 
 /**
- * Perform OCR on an image buffer using OpenAI's Vision capabilities (gpt-4o-mini).
+ * Perform OCR on an image buffer using Google's Vision capabilities (gemini-2.5-flash).
  * Extracts text, math formulas, headings, definitions, and highlights.
  * Flags unclear handwriting or blurry sections with [OCR_UNCERTAIN: reason].
  */
@@ -9,9 +15,6 @@ export async function performOCR(
   imageBuffer: Buffer,
   mimeType: string
 ): Promise<string> {
-  const base64Image = imageBuffer.toString('base64');
-  const imageUrl = `data:${mimeType};base64,${base64Image}`;
-
   const prompt = `Perform OCR on this study notes image. 
 Extract all text, headings, list points, definitions, formulas, examples, and key points accurately.
 Follow these formatting rules strictly:
@@ -22,18 +25,17 @@ Follow these formatting rules strictly:
 5. Do not include any introductory remarks, conversation, or wrapping blocks. Return ONLY the clean extracted Markdown text.`;
 
   try {
-    const response = await openai.chat.completions.create({
-      model: 'gpt-4o-mini',
+    const { text } = await generateText({
+      model: google('gemini-2.5-flash'),
       messages: [
         {
           role: 'user',
           content: [
             { type: 'text', text: prompt },
             {
-              type: 'image_url',
-              image_url: {
-                url: imageUrl,
-              },
+              type: 'image',
+              image: imageBuffer,
+              mediaType: mimeType,
             },
           ],
         },
@@ -41,9 +43,10 @@ Follow these formatting rules strictly:
       temperature: 0.1,
     });
 
-    return response.choices[0]?.message?.content?.trim() || '';
+    return text?.trim() || '';
   } catch (error) {
     console.error('[OCR Error]', error);
     throw new Error('Failed to perform OCR on image notes. Please check the API configuration and file format.');
   }
 }
+

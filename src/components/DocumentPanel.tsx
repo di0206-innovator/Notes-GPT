@@ -228,7 +228,6 @@ export default function DocumentPanel({
     }
   };
 
-  // Drag and drop handlers
   const handleDragOver = (e: React.DragEvent) => {
     e.preventDefault();
     setDragOver(true);
@@ -248,17 +247,16 @@ export default function DocumentPanel({
   };
 
   return (
-    <div className="flex flex-col gap-5 h-full">
+    <div className="flex flex-col gap-6 h-full font-mono">
+      
       {/* Sidebar Header */}
-      <div className="flex items-center justify-between border-b border-white/5 pb-3">
-        <div className="flex flex-col">
-          <h3 className="text-xs font-bold text-slate-400 uppercase tracking-widest">
-            Source Materials
-          </h3>
-          <span className="text-[10px] text-slate-500">
-            {documents.length} files loaded
-          </span>
-        </div>
+      <div className="flex flex-col border-b-2 border-white pb-4">
+        <h3 className="text-xs font-bold text-white uppercase tracking-widest">
+          [ SOURCE_MATERIALS ]
+        </h3>
+        <span className="text-[10px] text-white/60 mt-1">
+          {documents.length} FILES LOADED
+        </span>
       </div>
 
       {/* Drag & Drop Upload Zone */}
@@ -266,12 +264,12 @@ export default function DocumentPanel({
         onDragOver={handleDragOver}
         onDragLeave={handleDragLeave}
         onDrop={handleDrop}
-        className={`relative flex flex-col items-center justify-center gap-2 p-4 rounded-xl border-2 border-dashed transition-all cursor-pointer ${
+        className={`relative flex flex-col items-center justify-center gap-3 p-6 border-2 border-dashed transition-all cursor-pointer ${
           dragOver
-            ? 'border-purple-500 bg-purple-500/10 scale-[0.98]'
+            ? 'border-white bg-white text-black'
             : uploading
-            ? 'border-purple-500/30 bg-purple-500/5 cursor-wait'
-            : 'border-white/10 bg-white/5 hover:border-purple-500/50 hover:bg-purple-500/10'
+            ? 'border-white/50 bg-black cursor-wait animate-pulse'
+            : 'border-white/30 bg-black hover:border-white'
         }`}
       >
         <input
@@ -279,22 +277,22 @@ export default function DocumentPanel({
           accept=".pdf, image/*"
           onChange={handleFileChange}
           disabled={uploading}
-          className="absolute inset-0 opacity-0 cursor-pointer"
+          className="absolute inset-0 opacity-0 cursor-pointer z-10"
         />
 
         {uploading ? (
-          <div className="flex flex-col items-center gap-2 text-center py-2">
-            <Loader2 className="w-6 h-6 text-purple-400 animate-spin" />
-            <span className="text-[11px] text-purple-300 font-medium">{uploadStage}</span>
+          <div className="flex flex-col items-center gap-2 text-center py-2 text-white">
+            <span className="text-[10px] font-bold uppercase animate-flash">[ UPLOADING ]</span>
+            <span className="text-[9px] text-white/70 max-w-[150px] truncate">{uploadStage}</span>
           </div>
         ) : (
-          <div className="flex flex-col items-center gap-1.5 text-center py-2 pointer-events-none">
-            <Upload className="w-5 h-5 text-slate-400" />
-            <span className="text-xs text-slate-300 font-semibold">
-              Drop files here or click
+          <div className={`flex flex-col items-center gap-2 text-center py-2 ${dragOver ? 'text-black' : 'text-white'}`}>
+            <Upload className="w-5 h-5" />
+            <span className="text-xs font-bold uppercase tracking-wider">
+              DRAG OR SELECT
             </span>
-            <span className="text-[9px] text-slate-500">
-              Supports PDF, PNG, JPG, WEBP
+            <span className="text-[8px] text-white/50 uppercase">
+              PDF, PNG, JPG, WEBP
             </span>
           </div>
         )}
@@ -302,33 +300,30 @@ export default function DocumentPanel({
 
       {/* Upload Status / Errors */}
       {uploadStatus && (
-        <div
-          className={`flex items-start gap-2.5 p-3.5 rounded-xl text-[11px] leading-normal ${
-            uploadStatus.type === 'success'
-              ? 'bg-emerald-500/10 text-emerald-400 border border-emerald-500/20'
-              : 'bg-red-500/10 text-red-400 border border-red-500/20'
-          }`}
-        >
+        <div className="border-2 border-white p-3 bg-black flex items-start gap-2.5 text-[10px] leading-normal text-white">
           {uploadStatus.type === 'success' ? (
             <CheckCircle2 className="w-4 h-4 flex-shrink-0 mt-0.5" />
           ) : (
-            <AlertCircle className="w-4 h-4 flex-shrink-0 mt-0.5 text-red-400" />
+            <AlertCircle className="w-4 h-4 flex-shrink-0 mt-0.5" />
           )}
           <div className="flex-1">
             {uploadStatus.code === 'SCANNED_PDF_ERROR' ? (
-              <p className="font-semibold text-red-300">
-                Scanned PDF Detected:
-                <span className="font-normal block mt-1 text-slate-300">
-                  This document has no selectable text. Please upload it as note images (PNG/JPG) to run handwritten OCR.
-                </span>
-              </p>
+              <div>
+                <span className="font-bold block uppercase mb-1">[ SCANNED_PDF ]</span>
+                This PDF has no selectable text. Please upload it as note images (PNG/JPG) to run OCR.
+              </div>
             ) : (
-              <span className="font-medium">{uploadStatus.message}</span>
+              <div>
+                <span className="font-bold block uppercase mb-1">
+                  [{uploadStatus.type === 'success' ? 'SUCCESS' : 'CRITICAL_ERROR'}]
+                </span>
+                {uploadStatus.message}
+              </div>
             )}
           </div>
           <button
             onClick={() => setUploadStatus(null)}
-            className="text-white/30 hover:text-white/60 flex-shrink-0"
+            className="text-white hover:text-white/60 flex-shrink-0"
           >
             <X className="w-3.5 h-3.5" />
           </button>
@@ -336,18 +331,18 @@ export default function DocumentPanel({
       )}
 
       {/* Scrollable Document List */}
-      <div className="flex-1 overflow-y-auto space-y-2 pr-1 custom-scrollbar">
+      <div className="flex-1 overflow-y-auto space-y-3 pr-1 custom-scrollbar">
         {loading ? (
           <div className="flex items-center justify-center py-8">
-            <Loader2 className="w-4 h-4 text-slate-500 animate-spin" />
+            <span className="text-xs text-white/60 animate-flash">[ SCANNING... ]</span>
           </div>
         ) : documents.length === 0 ? (
-          <div className="text-center py-12 border border-white/5 bg-slate-900/10 rounded-2xl">
-            <FileText className="w-8 h-8 text-slate-600 mx-auto mb-2 opacity-50" />
-            <p className="text-[11px] text-slate-500 leading-normal">
-              No files uploaded yet.
+          <div className="text-center py-12 border-2 border-dashed border-white/20 bg-black">
+            <FileText className="w-6 h-6 text-white/30 mx-auto mb-2" />
+            <p className="text-[10px] text-white/50 uppercase leading-normal">
+              No files active.
               <br />
-              Add notes to get started.
+              Upload files to index.
             </p>
           </div>
         ) : (
@@ -356,9 +351,9 @@ export default function DocumentPanel({
             return (
               <div
                 key={doc.documentId}
-                className="flex items-center gap-3 p-3 rounded-xl bg-white/[0.02] border border-white/5 group hover:bg-white/[0.05] hover:border-white/10 transition-all"
+                className="flex items-center gap-3 p-3 border-2 border-white bg-black hover:bg-white hover:text-black group transition-colors"
               >
-                <div className={`p-2 rounded-lg ${isPDF ? 'bg-purple-500/10 text-purple-400' : 'bg-pink-500/10 text-pink-400'}`}>
+                <div className="p-1.5 border border-white flex-shrink-0">
                   {isPDF ? (
                     <FileText className="w-4 h-4" />
                   ) : (
@@ -366,16 +361,16 @@ export default function DocumentPanel({
                   )}
                 </div>
                 <div className="flex-1 min-w-0">
-                  <p className="text-[11px] font-bold text-slate-200 truncate" title={doc.filename}>
+                  <p className="text-[10px] font-bold truncate uppercase" title={doc.filename}>
                     {doc.filename}
                   </p>
-                  <p className="text-[9px] text-slate-500 font-semibold uppercase tracking-wider mt-0.5">
-                    {isPDF ? `${doc.totalPages} pages` : 'Image Note'} · {doc.chunkCount} chunks
+                  <p className="text-[8px] opacity-70 font-semibold uppercase mt-0.5">
+                    {isPDF ? `${doc.totalPages} PGS` : 'IMAGE'} · {doc.chunkCount} CHUNKS
                   </p>
                 </div>
                 <button
                   onClick={() => handleDelete(doc.documentId)}
-                  className="opacity-0 group-hover:opacity-100 p-1.5 rounded-lg hover:bg-red-500/10 text-slate-500 hover:text-red-400 transition-all flex-shrink-0"
+                  className="p-1 border border-transparent hover:border-black text-white hover:bg-black hover:text-white group-hover:text-black group-hover:hover:text-white transition-all flex-shrink-0"
                   title="Delete document"
                 >
                   <Trash2 className="w-3.5 h-3.5" />
@@ -388,21 +383,21 @@ export default function DocumentPanel({
 
       {/* Generate Study Kit CTA Button */}
       {documents.length > 0 && (
-        <div className="border-t border-white/5 pt-4 bg-[#0F0F12]/80 mt-auto">
+        <div className="border-t-2 border-white pt-4 bg-black mt-auto">
           <button
             onClick={onGenerateStudyKit}
             disabled={isGeneratingStudyKit || documents.length === 0}
-            className="w-full py-3.5 rounded-xl bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-500 hover:to-indigo-500 text-white font-bold text-xs shadow-lg shadow-purple-500/15 disabled:opacity-40 disabled:cursor-not-allowed transition-all flex items-center justify-center gap-2 group"
+            className="retro-button w-full py-3.5 flex items-center justify-center gap-2 group retro-shadow text-xs"
           >
             {isGeneratingStudyKit ? (
               <>
                 <Loader2 className="w-3.5 h-3.5 animate-spin" />
-                Generating Kit...
+                [ COMPILING... ]
               </>
             ) : (
               <>
-                <Sparkles className="w-3.5 h-3.5 text-purple-300 group-hover:animate-pulse" />
-                {hasStudyKit ? 'Update Study Kit' : 'Generate Study Kit'}
+                <Sparkles className="w-3.5 h-3.5" />
+                {hasStudyKit ? '[ REBUILD STUDY KIT ]' : '[ COMPILE STUDY KIT ]'}
               </>
             )}
           </button>
