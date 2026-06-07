@@ -1,16 +1,35 @@
 import { NextResponse } from 'next/server';
 import { ingestDocument, ingestImageDocument } from '@/lib/rag-pipeline';
+import { verifySession } from '@/lib/firebase-admin';
 
 export const maxDuration = 60; // PDF processing + embeddings can take a while
 
 export async function POST(req: Request) {
   try {
+    // 1. Verify session token
+    let sessionId: string;
+    try {
+      sessionId = await verifySession(req);
+    } catch (authError) {
+      const err = authError as Error;
+      return NextResponse.json({ error: err.message || 'Unauthorized' }, { status: 401 });
+    }
+
     const formData = await req.formData();
     const file = formData.get('file') as File | null;
 
     if (!file) {
       return NextResponse.json(
         { error: 'No file provided. Send a PDF or image file (PNG, JPG, WEBP) in the "file" field.' },
+        { status: 400 }
+      );
+    }
+
+    // 2. Enforce 15MB file size limit
+    const MAX_FILE_SIZE = 15 * 1024 * 1024; // 15MB
+    if (file.size > MAX_FILE_SIZE) {
+      return NextResponse.json(
+        { error: 'File size exceeds the 15MB limit. Please upload a smaller document.' },
         { status: 400 }
       );
     }
@@ -31,7 +50,6 @@ export async function POST(req: Request) {
     const arrayBuffer = await file.arrayBuffer();
     const buffer = Buffer.from(arrayBuffer);
 
-    const sessionId = req.headers.get('x-session-id') || 'global-default';
 
     // Run the ingestion pipeline
     let result;

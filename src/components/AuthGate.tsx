@@ -34,7 +34,8 @@ export default function AuthGate({ onAuthenticated }: AuthGateProps) {
         const userCredential = await signInWithEmailAndPassword(auth, email, password);
         onAuthenticated(userCredential.user.uid);
       }
-    } catch (err: any) {
+    } catch (error) {
+      const err = error as Error & { code?: string };
       console.error('Auth error:', err);
       // Clean up Firebase error messages to look nice in retro console
       let message = err.message || 'Authentication failed.';
@@ -57,9 +58,10 @@ export default function AuthGate({ onAuthenticated }: AuthGateProps) {
     try {
       const userCredential = await signInAnonymously(auth);
       onAuthenticated(userCredential.user.uid);
-    } catch (err: any) {
-      console.error('Guest auth error:', err);
-      setError(err.message || 'Failed to initialize guest session.');
+    } catch (err) {
+      const errorObj = err as Error;
+      console.error('Guest auth error:', errorObj);
+      setError(errorObj.message || 'Failed to initialize guest session.');
     } finally {
       setGuestLoading(false);
     }

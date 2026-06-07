@@ -1,9 +1,19 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { retrieveContext, formatContextForLLM } from '@/lib/rag-pipeline';
 import { generateChatResponse } from '@/lib/openai';
+import { verifySession } from '@/lib/firebase-admin';
 
 export async function POST(request: NextRequest) {
   try {
+    // 1. Verify session token
+    let sessionId: string;
+    try {
+      sessionId = await verifySession(request);
+    } catch (authError) {
+      const err = authError as Error;
+      return NextResponse.json({ error: err.message || 'Unauthorized' }, { status: 401 });
+    }
+
     const body = await request.json();
     const { messages } = body;
     
@@ -18,7 +28,6 @@ export async function POST(request: NextRequest) {
     }
 
     const query = latestMessage.content;
-    const sessionId = request.headers.get('x-session-id') || 'global-default';
     
     // 1. Retrieve relevant context via the RAG pipeline
     const relevantChunks = await retrieveContext(query, sessionId, 5);

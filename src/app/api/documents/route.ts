@@ -1,12 +1,20 @@
 import { NextResponse } from 'next/server';
 import { listDocuments, deleteDocument } from '@/lib/vector-store';
+import { verifySession } from '@/lib/firebase-admin';
 
 /**
  * GET /api/documents — list all ingested documents
  */
 export async function GET(req: Request) {
   try {
-    const sessionId = req.headers.get('x-session-id') || 'global-default';
+    let sessionId: string;
+    try {
+      sessionId = await verifySession(req);
+    } catch (authError) {
+      const err = authError as Error;
+      return NextResponse.json({ error: err.message || 'Unauthorized' }, { status: 401 });
+    }
+
     const documents = await listDocuments(sessionId);
     return NextResponse.json({ documents });
   } catch (error) {
@@ -25,7 +33,14 @@ export async function GET(req: Request) {
  */
 export async function DELETE(req: Request) {
   try {
-    const sessionId = req.headers.get('x-session-id') || 'global-default';
+    let sessionId: string;
+    try {
+      sessionId = await verifySession(req);
+    } catch (authError) {
+      const err = authError as Error;
+      return NextResponse.json({ error: err.message || 'Unauthorized' }, { status: 401 });
+    }
+
     const { documentId } = await req.json();
 
     if (!documentId) {
@@ -54,3 +69,4 @@ export async function DELETE(req: Request) {
     );
   }
 }
+

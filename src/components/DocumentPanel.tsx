@@ -13,6 +13,7 @@ import {
   Sparkles,
 } from 'lucide-react';
 import { getLocalDocuments, saveLocalDocument, deleteLocalDocument } from '@/lib/indexed-db-store';
+import { auth } from '@/lib/firebase';
 import { parsePDFClient, performLocalOCR } from '@/lib/local-parser';
 import { chunkText } from '@/lib/chunker';
 
@@ -67,9 +68,10 @@ export default function DocumentPanel({
             setDocuments(docs || []);
           }
         } else {
+          const idToken = await auth.currentUser?.getIdToken();
           const res = await fetch('/api/documents', {
             headers: {
-              'x-session-id': sessionId,
+              'Authorization': `Bearer ${idToken}`,
             },
           });
           const data = await res.json();
@@ -160,10 +162,11 @@ export default function DocumentPanel({
         const formData = new FormData();
         formData.append('file', file);
 
+        const idToken = await auth.currentUser?.getIdToken();
         const res = await fetch('/api/documents/upload', {
           method: 'POST',
           headers: {
-            'x-session-id': sessionId,
+            'Authorization': `Bearer ${idToken}`,
           },
           body: formData,
         });
@@ -209,11 +212,12 @@ export default function DocumentPanel({
         setDocuments((prev) => prev.filter((d) => d.documentId !== documentId));
         onRefresh();
       } else {
+        const idToken = await auth.currentUser?.getIdToken();
         const res = await fetch('/api/documents', {
           method: 'DELETE',
           headers: {
             'Content-Type': 'application/json',
-            'x-session-id': sessionId,
+            'Authorization': `Bearer ${idToken}`,
           },
           body: JSON.stringify({ documentId }),
         });

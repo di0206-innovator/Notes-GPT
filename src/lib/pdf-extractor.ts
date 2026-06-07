@@ -8,6 +8,22 @@ export interface ExtractedDocument {
   isScanned: boolean;
 }
 
+interface PDFParseInstance {
+  getText(): Promise<{
+    text: string;
+    total: number;
+    pages: Array<{ text: string }>;
+  }>;
+  destroy(): Promise<void>;
+}
+
+interface PDFParseType {
+  PDFParse?: new (options: { data: Buffer }) => PDFParseInstance;
+  default?: {
+    PDFParse?: new (options: { data: Buffer }) => PDFParseInstance;
+  };
+}
+
 /**
  * Extract text from a PDF buffer.
  * Returns the full text, per-page text arrays, and whether it's detected as scanned.
@@ -16,7 +32,7 @@ export async function extractTextFromPDF(
   buffer: Buffer,
   filename: string
 ): Promise<ExtractedDocument> {
-  const pdfParse: any = pdfParseModule;
+  const pdfParse = pdfParseModule as unknown as PDFParseType;
   const PDFParseClass = pdfParse.PDFParse || pdfParse.default?.PDFParse;
 
   if (!PDFParseClass) {
@@ -30,7 +46,7 @@ export async function extractTextFromPDF(
     const result = await parser.getText();
     const text = result.text;
     const totalPages = result.total;
-    const pageTexts = result.pages.map((p: any) => p.text.trim());
+    const pageTexts = result.pages.map((p) => p.text.trim());
 
     // Heuristic: If total extracted text length is extremely low compared to the number of pages,
     // it is likely a scanned document (images instead of text).

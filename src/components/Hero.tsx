@@ -4,7 +4,7 @@ import React from "react";
 import Image from "next/image";
 import Link from "next/link";
 import { motion } from "framer-motion";
-import { ArrowRight, Play, Users } from "lucide-react";
+import { ArrowRight, Play } from "lucide-react";
 
 export const Hero = () => {
   return (
@@ -73,7 +73,7 @@ export const Hero = () => {
             <div className="flex -space-x-4">
               {[1, 2, 3, 4, 5].map((i) => (
                 <div key={i} className="w-12 h-12 rounded-full border-4 border-[#0F0F1A] bg-zinc-800 flex items-center justify-center overflow-hidden ring-1 ring-white/5 shadow-xl">
-                   <img src={`https://i.pravatar.cc/100?u=${i + 10}`} alt="User" className="w-full h-full object-cover" />
+                   <Image src={`https://i.pravatar.cc/100?u=${i + 10}`} alt="User" className="w-full h-full object-cover" width={48} height={48} unoptimized />
                 </div>
               ))}
             </div>

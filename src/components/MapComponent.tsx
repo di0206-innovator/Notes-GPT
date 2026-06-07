@@ -1,7 +1,7 @@
 'use client';
 
 import { motion } from 'framer-motion';
-import { MapPin, Navigation, Info } from 'lucide-react';
+import { Navigation, Info } from 'lucide-react';
 
 export default function MapComponent() {
   const buildings = [

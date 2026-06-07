@@ -1,10 +1,11 @@
 'use client';
 
 import React, { useState, useRef, useEffect } from 'react';
-import { Send, Terminal, User, Sparkles } from 'lucide-react';
+import { Send, Terminal, User } from 'lucide-react';
 import { Markdown } from './Markdown';
 import { searchLocalChunks } from '@/lib/indexed-db-store';
 import { getLocalAISupport, generateLocalResponse } from '@/lib/local-ai';
+import { auth } from '@/lib/firebase';
 
 type Message = {
   role: 'user' | 'assistant' | 'system';
@@ -20,10 +21,9 @@ const SUGGESTED_CHIPS = [
 
 interface ChatInterfaceProps {
   mode: 'cloud' | 'local';
-  sessionId: string;
 }
 
-export default function ChatInterface({ mode, sessionId }: ChatInterfaceProps) {
+export default function ChatInterface({ mode }: ChatInterfaceProps) {
   const [messages, setMessages] = useState<Message[]>([
     {
       role: 'assistant',
@@ -88,11 +88,12 @@ ${contextText || 'No local document context available.'}
           { role: 'assistant', content: reply },
         ]);
       } else {
+        const idToken = await auth.currentUser?.getIdToken();
         const response = await fetch('/api/chat', {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
-            'x-session-id': sessionId,
+            'Authorization': `Bearer ${idToken}`,
           },
           body: JSON.stringify({ messages: newMessages }),
         });

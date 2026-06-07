@@ -1,5 +1,5 @@
 import Link from 'next/link';
-import { BookOpen, Layers, HelpCircle, FileSignature, Terminal, Shield } from 'lucide-react';
+import { BookOpen, Layers, HelpCircle, FileSignature, Terminal } from 'lucide-react';
 
 export default function Home() {
   return (
@@ -29,7 +29,7 @@ export default function Home() {
         
         {/* Banner Tag */}
         <div className="border border-white/50 bg-white/5 px-4 py-1.5 text-[9px] font-bold text-white uppercase tracking-widest mb-8 animate-flash">
-          // ACADEMIC RAG TERMINAL V1.0.0 INITIALIZED //
+          {"// ACADEMIC RAG TERMINAL V1.0.0 INITIALIZED //"}
         </div>
 
         {/* Big Brutalist Monospace Header */}
@@ -66,7 +66,7 @@ export default function Home() {
             <div className="w-8 h-8 border border-white group-hover:border-black flex items-center justify-center mb-6">
               <BookOpen className="w-4.5 h-4.5" />
             </div>
-            <h3 className="text-xs font-bold uppercase mb-2">// REVISION NOTES</h3>
+            <h3 className="text-xs font-bold uppercase mb-2">{"// REVISION NOTES"}</h3>
             <p className="opacity-70 text-[10px] uppercase leading-relaxed">
               Synthesizes PDFs and note images into topic summaries, complete with formulas, definitions, and LaTeX equations.
             </p>
@@ -77,7 +77,7 @@ export default function Home() {
             <div className="w-8 h-8 border border-white group-hover:border-black flex items-center justify-center mb-6">
               <Layers className="w-4.5 h-4.5" />
             </div>
-            <h3 className="text-xs font-bold uppercase mb-2">// ACTIVE RECALL</h3>
+            <h3 className="text-xs font-bold uppercase mb-2">{"// ACTIVE RECALL"}</h3>
             <p className="opacity-70 text-[10px] uppercase leading-relaxed">
               Auto-generates study flashcards for critical terms and principles. Simple monochrome interactive flip panels.
             </p>
@@ -88,7 +88,7 @@ export default function Home() {
             <div className="w-8 h-8 border border-white group-hover:border-black flex items-center justify-center mb-6">
               <HelpCircle className="w-4.5 h-4.5" />
             </div>
-            <h3 className="text-xs font-bold uppercase mb-2">// PREDICTED Q&AS</h3>
+            <h3 className="text-xs font-bold uppercase mb-2">{"// PREDICTED Q&AS"}</h3>
             <p className="opacity-70 text-[10px] uppercase leading-relaxed">
               Generates MCQ pools, short definition tests, and deep essay prompts with grading answer keys.
             </p>
@@ -99,7 +99,7 @@ export default function Home() {
             <div className="w-8 h-8 border border-white group-hover:border-black flex items-center justify-center mb-6">
               <FileSignature className="w-4.5 h-4.5" />
             </div>
-            <h3 className="text-xs font-bold uppercase mb-2">// MOCK SIMULATOR</h3>
+            <h3 className="text-xs font-bold uppercase mb-2">{"// MOCK SIMULATOR"}</h3>
             <p className="opacity-70 text-[10px] uppercase leading-relaxed">
               Assembles university-style mock tests with grading rubrics. Plain layout styles for clean physical printing.
             </p>

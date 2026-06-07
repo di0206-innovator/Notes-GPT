@@ -19,7 +19,7 @@ export async function generateChatResponse(
   const { text } = await generateText({
     model: google('gemini-2.5-flash'),
     system: systemMessage?.content,
-    messages: otherMessages as any[],
+    messages: otherMessages as Array<{ role: 'user' | 'assistant'; content: string }>,
     temperature: 0.2,
   });
   

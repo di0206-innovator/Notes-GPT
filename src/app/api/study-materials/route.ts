@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { generateStudyKit } from '@/lib/study-generator';
 import { listDocuments, getCloudStudyKit, saveCloudStudyKit } from '@/lib/vector-store';
+import { verifySession } from '@/lib/firebase-admin';
 
 export const maxDuration = 60; // Generating summaries, flashcards, MCQs and exams takes a while
 
@@ -10,7 +11,14 @@ export const maxDuration = 60; // Generating summaries, flashcards, MCQs and exa
  */
 export async function GET(req: NextRequest) {
   try {
-    const sessionId = req.headers.get('x-session-id') || 'global-default';
+    let sessionId: string;
+    try {
+      sessionId = await verifySession(req);
+    } catch (authError) {
+      const err = authError as Error;
+      return NextResponse.json({ error: err.message || 'Unauthorized' }, { status: 401 });
+    }
+
     const documents = await listDocuments(sessionId);
     
     if (documents.length === 0) {
@@ -35,7 +43,14 @@ export async function GET(req: NextRequest) {
  */
 export async function POST(req: NextRequest) {
   try {
-    const sessionId = req.headers.get('x-session-id') || 'global-default';
+    let sessionId: string;
+    try {
+      sessionId = await verifySession(req);
+    } catch (authError) {
+      const err = authError as Error;
+      return NextResponse.json({ error: err.message || 'Unauthorized' }, { status: 401 });
+    }
+
     const documents = await listDocuments(sessionId);
     if (documents.length === 0) {
       return NextResponse.json(
@@ -60,4 +75,5 @@ export async function POST(req: NextRequest) {
     );
   }
 }
+
 

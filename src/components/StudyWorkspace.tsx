@@ -155,7 +155,7 @@ export default function StudyWorkspace({
             >
               <div className="flex justify-between items-center border-b border-white/20 pb-4 print:hidden">
                 <h3 className="text-xs font-bold text-white/60 uppercase tracking-widest">
-                  // REVISION NOTES SUMMARY
+                  {"// REVISION NOTES SUMMARY"}
                 </h3>
                 <button
                   onClick={handlePrint}
@@ -182,7 +182,7 @@ export default function StudyWorkspace({
             >
               <div className="flex justify-between items-center border-b border-white/20 pb-4 print:hidden">
                 <h3 className="text-xs font-bold text-white/60 uppercase tracking-widest">
-                  // IMPORTANT QUESTIONS & ANSWERS
+                  {"// IMPORTANT QUESTIONS & ANSWERS"}
                 </h3>
                 <button
                   onClick={handlePrint}
@@ -320,7 +320,7 @@ export default function StudyWorkspace({
               {/* Controls bar */}
               <div className="flex flex-wrap items-center justify-between gap-4 border-b border-white/20 pb-4 print:hidden">
                 <h3 className="text-xs font-bold text-white/60 uppercase tracking-widest">
-                  // UNIVERSITY PRACTICE EXAM SIMULATOR
+                  {"// UNIVERSITY PRACTICE EXAM SIMULATOR"}
                 </h3>
                 <div className="flex items-center gap-3">
                   <button

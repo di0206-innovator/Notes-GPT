@@ -4,7 +4,6 @@ import { useState, useEffect, useCallback } from 'react';
 import {
   PanelLeftClose,
   PanelLeftOpen,
-  Loader2,
   BookOpen,
   MessageSquare,
   Columns,
@@ -22,7 +21,7 @@ import AuthGate from '@/components/AuthGate';
 import { auth } from '@/lib/firebase';
 import { onAuthStateChanged, signOut } from 'firebase/auth';
 import { StudyKit } from '@/lib/study-generator';
-import { getLocalStudyKit, getLocalChunks } from '@/lib/indexed-db-store';
+import { getLocalStudyKit, getLocalChunks, clearLocalStore } from '@/lib/indexed-db-store';
 import { generateLocalStudyKit, getLocalAISupport } from '@/lib/local-ai';
 
 export default function ChatPageClient() {
@@ -82,9 +81,10 @@ export default function ChatPageClient() {
         const kit = await getLocalStudyKit() as StudyKit | null;
         setStudyKit(kit);
       } else {
+        const idToken = await auth.currentUser?.getIdToken();
         const res = await fetch('/api/study-materials', {
           headers: {
-            'x-session-id': activeSessionId,
+            'Authorization': `Bearer ${idToken}`,
           },
         });
         const data = await res.json();
@@ -104,7 +104,15 @@ export default function ChatPageClient() {
   // Re-fetch study kit when mode or userId changes
   useEffect(() => {
     if (userId) {
-      fetchStudyKit(mode, userId);
+      let active = true;
+      Promise.resolve().then(() => {
+        if (active) {
+          fetchStudyKit(mode, userId);
+        }
+      });
+      return () => {
+        active = false;
+      };
     }
   }, [mode, userId, fetchStudyKit]);
 
@@ -155,10 +163,11 @@ export default function ChatPageClient() {
       }, 2500);
 
       try {
+        const idToken = await auth.currentUser?.getIdToken();
         const res = await fetch('/api/study-materials', {
           method: 'POST',
           headers: {
-            'x-session-id': userId,
+            'Authorization': `Bearer ${idToken}`,
           },
         });
         const data = await res.json();
@@ -187,6 +196,7 @@ export default function ChatPageClient() {
 
   const handleLogout = async () => {
     try {
+      await clearLocalStore().catch((e) => console.error('IndexedDB clear error:', e));
       await signOut(auth);
       setStudyKit(null);
     } catch (err) {
@@ -368,7 +378,7 @@ export default function ChatPageClient() {
 
               {/* Right Chat companion */}
               <div className="h-full min-h-0">
-                <ChatInterface mode={mode} sessionId={userId} />
+                <ChatInterface mode={mode} />
               </div>
             </div>
           ) : (
@@ -392,7 +402,7 @@ export default function ChatPageClient() {
                 <div className={`h-full min-h-0 flex flex-col transition-all duration-300 ${
                   layoutMode === 'split' ? 'w-full lg:w-[45%] flex-shrink-0' : 'w-full'
                 }`}>
-                  <ChatInterface mode={mode} sessionId={userId} />
+                  <ChatInterface mode={mode} />
                 </div>
               )}
             </div>
