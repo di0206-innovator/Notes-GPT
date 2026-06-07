@@ -7,7 +7,7 @@ if (!process.env.OPENAI_API_KEY) {
 }
 
 export const openai = new OpenAI({
-  apiKey: process.env.OPENAI_API_KEY,
+  apiKey: process.env.OPENAI_API_KEY || 'mock-key-for-build',
 });
 
 export async function generateEmbedding(text: string): Promise<number[]> {
@@ -19,10 +19,12 @@ export async function generateEmbedding(text: string): Promise<number[]> {
   return response.data[0].embedding;
 }
 
-export async function generateChatResponse(messages: any[]): Promise<string> {
+export async function generateChatResponse(
+  messages: Array<{ role: 'user' | 'assistant' | 'system'; content: string }>
+): Promise<string> {
   const response = await openai.chat.completions.create({
     model: 'gpt-4o-mini',
-    messages: messages,
+    messages: messages as OpenAI.ChatCompletionMessageParam[],
     temperature: 0.2,
   });
   

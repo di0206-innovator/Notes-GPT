@@ -16,7 +16,8 @@ export async function POST(request: NextRequest) {
 
     const buffer = Buffer.from(await file.arrayBuffer());
 
-    const result = await ingestDocument(buffer, file.name);
+    const sessionId = request.headers.get('x-session-id') || 'global-default';
+    const result = await ingestDocument(buffer, file.name, sessionId);
 
     return NextResponse.json({
       success: true,
@@ -25,8 +26,9 @@ export async function POST(request: NextRequest) {
       chunkCount: result.chunkCount,
     });
 
-  } catch (error: any) {
-    console.error('Error in upload route:', error);
-    return NextResponse.json({ error: error.message || 'Internal server error' }, { status: 500 });
+  } catch (error) {
+    const err = error as Error;
+    console.error('Error in upload route:', err);
+    return NextResponse.json({ error: err.message || 'Internal server error' }, { status: 500 });
   }
 }

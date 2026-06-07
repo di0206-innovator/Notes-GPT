@@ -1,8 +1,9 @@
 import { v4 as uuidv4 } from 'uuid';
 import { extractTextFromPDF } from './pdf-extractor';
-import { chunkText, TextChunk } from './chunker';
+import { chunkText } from './chunker';
 import { generateEmbeddings, generateQueryEmbedding } from './embeddings';
-import { addDocumentChunks, search, DocumentMeta, StoredChunk } from './vector-store';
+import { addDocumentChunks, search, DocumentMeta } from './vector-store';
+import { performOCR } from './ocr';
 
 export interface IngestResult {
   documentId: string;
@@ -23,13 +24,19 @@ export interface RetrievedChunk {
  */
 export async function ingestDocument(
   buffer: Buffer,
-  filename: string
+  filename: string,
+  sessionId: string
 ): Promise<IngestResult> {
   const documentId = uuidv4();
 
   // 1. Extract text from PDF
   console.log(`[RAG] Extracting text from "${filename}"...`);
   const extracted = await extractTextFromPDF(buffer, filename);
+
+  // Heuristic: reject scanned PDFs and tell the user to upload note images
+  if (extracted.isScanned) {
+    throw new Error('SCANNED_PDF_ERROR: This PDF appears to be a scanned document or has no selectable text. Please upload it as image files (PNG/JPG) for OCR extraction.');
+  }
 
   // 2. Chunk the text
   console.log(`[RAG] Chunking text (${extracted.totalPages} pages)...`);
@@ -65,7 +72,7 @@ export async function ingestDocument(
     uploadedAt: new Date().toISOString(),
   };
 
-  await addDocumentChunks(meta, storedChunks);
+  await addDocumentChunks(meta, storedChunks, sessionId);
   console.log(`[RAG] Document "${filename}" ingested successfully (${chunks.length} chunks)`);
 
   return {
@@ -77,18 +84,80 @@ export async function ingestDocument(
 }
 
 /**
+ * Image ingestion pipeline: Image buffer → OpenAI Vision OCR → chunk → embed → store.
+ */
+export async function ingestImageDocument(
+  buffer: Buffer,
+  mimeType: string,
+  filename: string,
+  sessionId: string
+): Promise<IngestResult> {
+  const documentId = uuidv4();
+
+  // 1. Extract text from image via OCR Vision
+  console.log(`[RAG] Performing OCR on image "${filename}"...`);
+  const extractedText = await performOCR(buffer, mimeType);
+
+  if (!extractedText || extractedText.trim().length === 0) {
+    throw new Error('Could not extract any readable text from this image note.');
+  }
+
+  // 2. Chunk the text (as a single page document)
+  console.log(`[RAG] Chunking extracted image text...`);
+  const chunks = chunkText(
+    extractedText,
+    documentId,
+    filename,
+    [extractedText]
+  );
+  console.log(`[RAG] Created ${chunks.length} chunks`);
+
+  // 3. Generate embeddings
+  console.log(`[RAG] Generating embeddings for ${chunks.length} chunks...`);
+  const chunkTexts = chunks.map((c) => c.content);
+  const embeddings = await generateEmbeddings(chunkTexts);
+
+  // 4. Store in vector store
+  console.log(`[RAG] Storing chunks in vector store...`);
+  const storedChunks = chunks.map((chunk, i) => ({
+    ...chunk,
+    embedding: embeddings[i],
+  }));
+
+  const meta: DocumentMeta = {
+    documentId,
+    filename,
+    chunkCount: chunks.length,
+    totalPages: 1,
+    uploadedAt: new Date().toISOString(),
+  };
+
+  await addDocumentChunks(meta, storedChunks, sessionId);
+  console.log(`[RAG] Image "${filename}" ingested successfully (${chunks.length} chunks)`);
+
+  return {
+    documentId,
+    filename,
+    chunkCount: chunks.length,
+    totalPages: 1,
+  };
+}
+
+
+/**
  * Retrieve relevant context for a user query.
  * Returns the top-K most relevant chunks from all ingested documents.
  */
 export async function retrieveContext(
   query: string,
+  sessionId: string,
   topK: number = 5
 ): Promise<RetrievedChunk[]> {
   // Generate embedding for the query
   const queryEmbedding = await generateQueryEmbedding(query);
 
   // Search the vector store
-  const results = await search(queryEmbedding, topK);
+  const results = await search(queryEmbedding, sessionId, topK);
 
   return results.map((r) => ({
     content: r.content,

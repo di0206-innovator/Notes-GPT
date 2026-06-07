@@ -1,6 +1,15 @@
-import { readFile, writeFile, mkdir } from 'fs/promises';
-import { existsSync } from 'fs';
-import path from 'path';
+import { db } from './firebase';
+import {
+  collection,
+  doc,
+  setDoc,
+  getDoc,
+  getDocs,
+  deleteDoc,
+  query,
+  where,
+  writeBatch,
+} from 'firebase/firestore';
 
 export interface StoredChunk {
   content: string;
@@ -17,47 +26,7 @@ export interface DocumentMeta {
   chunkCount: number;
   totalPages: number;
   uploadedAt: string;
-}
-
-interface VectorStoreData {
-  documents: DocumentMeta[];
-  chunks: StoredChunk[];
-}
-
-const DATA_DIR = path.join(process.cwd(), 'data');
-const STORE_PATH = path.join(DATA_DIR, 'vectors.json');
-
-/**
- * Load the vector store from disk, or return empty store.
- */
-async function loadStore(): Promise<VectorStoreData> {
-  if (!existsSync(STORE_PATH)) {
-    return { documents: [], chunks: [] };
-  }
-  try {
-    const raw = await readFile(STORE_PATH, 'utf-8');
-    if (!raw || !raw.trim() || raw.trim() === 'undefined') {
-      return { documents: [], chunks: [] };
-    }
-    return JSON.parse(raw) as VectorStoreData;
-  } catch (error) {
-    console.error("Error loading vector store:", error);
-    return { documents: [], chunks: [] };
-  }
-}
-
-/**
- * Save the vector store to disk.
- */
-async function saveStore(store: VectorStoreData): Promise<void> {
-  if (!store) return;
-  try {
-    await mkdir(DATA_DIR, { recursive: true });
-    await writeFile(STORE_PATH, JSON.stringify(store, null, 2) || '{}', 'utf-8');
-  } catch (error) {
-    console.error("Error saving vector store:", error);
-    throw new Error("Failed to save data to vector store.");
-  }
+  type?: 'pdf' | 'image';
 }
 
 /**
@@ -78,37 +47,61 @@ export function cosineSimilarity(a: number[], b: number[]): number {
 }
 
 /**
- * Add document chunks with embeddings to the store.
+ * Add document chunks with embeddings to Firestore.
+ * Scoped by sessionId for multi-tenancy.
  */
 export async function addDocumentChunks(
   documentMeta: DocumentMeta,
-  chunks: StoredChunk[]
+  chunks: StoredChunk[],
+  sessionId: string
 ): Promise<void> {
-  const store = await loadStore();
+  // 1. Save document metadata
+  const docRef = doc(db, 'documents', `${sessionId}_${documentMeta.documentId}`);
+  await setDoc(docRef, {
+    ...documentMeta,
+    sessionId,
+    type: documentMeta.type || 'pdf',
+  });
 
-  // Remove existing document if re-uploading
-  store.documents = store.documents.filter((d) => d.documentId !== documentMeta.documentId);
-  store.chunks = store.chunks.filter((c) => c.documentId !== documentMeta.documentId);
+  // 2. Save chunks in batches (Firestore supports batches up to 500 documents)
+  const batch = writeBatch(db);
+  chunks.forEach((chunk, i) => {
+    const chunkId = `${sessionId}_${documentMeta.documentId}_${i}`;
+    const chunkRef = doc(db, 'chunks', chunkId);
+    batch.set(chunkRef, {
+      ...chunk,
+      sessionId,
+    });
+  });
 
-  store.documents.push(documentMeta);
-  store.chunks.push(...chunks);
-  await saveStore(store);
+  await batch.commit();
 }
 
 /**
- * Search the vector store for the top-K most similar chunks to the query embedding.
+ * Search Firestore for chunks matching query embedding.
+ * Scoped by sessionId.
  */
 export async function search(
   queryEmbedding: number[],
+  sessionId: string,
   topK: number = 5
 ): Promise<(StoredChunk & { score: number })[]> {
-  const store = await loadStore();
+  // Query all chunks for this session
+  const chunksRef = collection(db, 'chunks');
+  const q = query(chunksRef, where('sessionId', '==', sessionId));
+  const querySnapshot = await getDocs(q);
 
-  if (store.chunks.length === 0) {
+  const chunks: StoredChunk[] = [];
+  querySnapshot.forEach((docSnap) => {
+    chunks.push(docSnap.data() as StoredChunk);
+  });
+
+  if (chunks.length === 0) {
     return [];
   }
 
-  const scored = store.chunks.map((chunk) => ({
+  // Compute cosine similarity in memory
+  const scored = chunks.map((chunk) => ({
     ...chunk,
     score: cosineSimilarity(queryEmbedding, chunk.embedding),
   }));
@@ -118,21 +111,93 @@ export async function search(
 }
 
 /**
- * List all ingested documents.
+ * List all documents for this session from Firestore.
  */
-export async function listDocuments(): Promise<DocumentMeta[]> {
-  const store = await loadStore();
-  return store.documents;
+export async function listDocuments(sessionId: string): Promise<DocumentMeta[]> {
+  const docsRef = collection(db, 'documents');
+  const q = query(docsRef, where('sessionId', '==', sessionId));
+  const querySnapshot = await getDocs(q);
+
+  const documents: DocumentMeta[] = [];
+  querySnapshot.forEach((docSnap) => {
+    documents.push(docSnap.data() as DocumentMeta);
+  });
+
+  return documents;
 }
 
 /**
- * Delete a document and all its chunks.
+ * Get all text chunks for this session from Firestore (for study kit generation).
  */
-export async function deleteDocument(documentId: string): Promise<boolean> {
-  const store = await loadStore();
-  const before = store.documents.length;
-  store.documents = store.documents.filter((d) => d.documentId !== documentId);
-  store.chunks = store.chunks.filter((c) => c.documentId !== documentId);
-  await saveStore(store);
-  return store.documents.length < before;
+export async function getDocumentChunks(
+  sessionId: string,
+  documentId?: string
+): Promise<StoredChunk[]> {
+  const chunksRef = collection(db, 'chunks');
+  let q = query(chunksRef, where('sessionId', '==', sessionId));
+  if (documentId) {
+    q = query(chunksRef, where('sessionId', '==', sessionId), where('documentId', '==', documentId));
+  }
+  const querySnapshot = await getDocs(q);
+
+  const chunks: StoredChunk[] = [];
+  querySnapshot.forEach((docSnap) => {
+    chunks.push(docSnap.data() as StoredChunk);
+  });
+
+  return chunks;
+}
+
+/**
+ * Delete a document and all its chunks from Firestore.
+ * Scoped by sessionId.
+ */
+export async function deleteDocument(documentId: string, sessionId: string): Promise<boolean> {
+  // 1. Delete document meta doc
+  const docRef = doc(db, 'documents', `${sessionId}_${documentId}`);
+  const docSnap = await getDoc(docRef);
+  if (!docSnap.exists()) {
+    return false;
+  }
+  await deleteDoc(docRef);
+
+  // 2. Query and delete chunks in batches
+  const chunksRef = collection(db, 'chunks');
+  const q = query(
+    chunksRef,
+    where('sessionId', '==', sessionId),
+    where('documentId', '==', documentId)
+  );
+  const querySnapshot = await getDocs(q);
+
+  const batch = writeBatch(db);
+  querySnapshot.forEach((docSnap) => {
+    batch.delete(docSnap.ref);
+  });
+
+  await batch.commit();
+  return true;
+}
+
+/**
+ * Save generated study kit in Firestore.
+ */
+export async function saveCloudStudyKit(studyKit: Record<string, unknown>, sessionId: string): Promise<void> {
+  const kitRef = doc(db, 'studyKits', sessionId);
+  await setDoc(kitRef, {
+    ...studyKit,
+    sessionId,
+  });
+}
+
+/**
+ * Retrieve study kit for session from Firestore.
+ */
+export async function getCloudStudyKit(sessionId: string): Promise<Record<string, unknown> | null> {
+  const kitRef = doc(db, 'studyKits', sessionId);
+  const kitSnap = await getDoc(kitRef);
+  if (!kitSnap.exists()) {
+    return null;
+  }
+  return kitSnap.data() as Record<string, unknown>;
 }

@@ -7,7 +7,7 @@ interface Document {
   id: string;
   metadata: {
     name: string;
-    [key: string]: any;
+    [key: string]: unknown;
   };
 }
 
@@ -16,24 +16,30 @@ export const KBStatus = () => {
   const [isLoading, setIsLoading] = useState(true);
   const [isHovered, setIsHovered] = useState(false);
 
-  const fetchStatus = async () => {
-    try {
-      const response = await fetch("/api/documents");
-      const data = await response.json();
-      if (data.documents) {
-        setDocuments(data.documents);
-      }
-    } catch (error) {
-      console.error("Failed to fetch KB status:", error);
-    } finally {
-      setIsLoading(false);
-    }
-  };
-
   useEffect(() => {
+    let active = true;
+    const fetchStatus = async () => {
+      try {
+        const response = await fetch("/api/documents");
+        const data = await response.json();
+        if (active && data.documents) {
+          setDocuments(data.documents);
+        }
+      } catch (error) {
+        console.error("Failed to fetch KB status:", error);
+      } finally {
+        if (active) {
+          setIsLoading(false);
+        }
+      }
+    };
+
     fetchStatus();
     const interval = setInterval(fetchStatus, 30000); // Refresh every 30s
-    return () => clearInterval(interval);
+    return () => {
+      active = false;
+      clearInterval(interval);
+    };
   }, []);
 
   return (

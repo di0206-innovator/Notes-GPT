@@ -4,14 +4,16 @@ import { listDocuments, deleteDocument } from '@/lib/vector-store';
 /**
  * GET /api/documents — list all ingested documents
  */
-export async function GET() {
+export async function GET(req: Request) {
   try {
-    const documents = await listDocuments();
+    const sessionId = req.headers.get('x-session-id') || 'global-default';
+    const documents = await listDocuments(sessionId);
     return NextResponse.json({ documents });
-  } catch (error: any) {
-    console.error('[Documents List Error]', error);
+  } catch (error) {
+    const err = error as Error;
+    console.error('[Documents List Error]', err);
     return NextResponse.json(
-      { error: error.message || 'Failed to list documents.' },
+      { error: err.message || 'Failed to list documents.' },
       { status: 500 }
     );
   }
@@ -23,6 +25,7 @@ export async function GET() {
  */
 export async function DELETE(req: Request) {
   try {
+    const sessionId = req.headers.get('x-session-id') || 'global-default';
     const { documentId } = await req.json();
 
     if (!documentId) {
@@ -32,7 +35,7 @@ export async function DELETE(req: Request) {
       );
     }
 
-    const deleted = await deleteDocument(documentId);
+    const deleted = await deleteDocument(documentId, sessionId);
 
     if (!deleted) {
       return NextResponse.json(
@@ -42,10 +45,11 @@ export async function DELETE(req: Request) {
     }
 
     return NextResponse.json({ success: true, documentId });
-  } catch (error: any) {
-    console.error('[Documents Delete Error]', error);
+  } catch (error) {
+    const err = error as Error;
+    console.error('[Documents Delete Error]', err);
     return NextResponse.json(
-      { error: error.message || 'Failed to delete document.' },
+      { error: err.message || 'Failed to delete document.' },
       { status: 500 }
     );
   }
