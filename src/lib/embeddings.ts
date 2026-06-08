@@ -1,3 +1,4 @@
+import './dns-patch';
 import { google } from '@ai-sdk/google';
 import { embedMany } from 'ai';
 

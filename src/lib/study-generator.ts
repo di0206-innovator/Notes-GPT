@@ -196,13 +196,21 @@ export async function generateStudyKit(sessionId: string): Promise<StudyKit> {
 
   console.log(`[StudyKit] Generating study materials using ${chunks.length} chunks...`);
 
-  // 3. Generate all assets in parallel to save time
-  const [notes, qna, flashcards, examData] = await Promise.all([
-    generateRevisionNotes(contextText),
-    generateQuestionBank(contextText),
-    generateFlashcards(contextText),
-    generateMockExam(contextText),
-  ]);
+  // 3. Generate all assets sequentially with a small delay to respect free-tier rate limits
+  console.log('[StudyKit] Generating revision notes...');
+  const notes = await generateRevisionNotes(contextText);
+  
+  await new Promise((resolve) => setTimeout(resolve, 12000));
+  console.log('[StudyKit] Generating question bank...');
+  const qna = await generateQuestionBank(contextText);
+  
+  await new Promise((resolve) => setTimeout(resolve, 12000));
+  console.log('[StudyKit] Generating flashcards...');
+  const flashcards = await generateFlashcards(contextText);
+  
+  await new Promise((resolve) => setTimeout(resolve, 12000));
+  console.log('[StudyKit] Generating mock exam...');
+  const examData = await generateMockExam(contextText);
 
   return {
     revisionNotes: notes,

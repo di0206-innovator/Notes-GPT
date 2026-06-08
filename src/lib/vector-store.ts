@@ -1,15 +1,12 @@
-import { db } from './firebase';
-import {
-  collection,
-  doc,
-  setDoc,
-  getDoc,
-  getDocs,
-  deleteDoc,
-  query,
-  where,
-  writeBatch,
-} from 'firebase/firestore';
+import * as admin from 'firebase-admin';
+
+if (!admin.apps.length) {
+  admin.initializeApp({
+    projectId: 'studio-9817976701-89717',
+  });
+}
+
+const db = admin.firestore();
 
 export interface StoredChunk {
   content: string;
@@ -56,18 +53,18 @@ export async function addDocumentChunks(
   sessionId: string
 ): Promise<void> {
   // 1. Save document metadata
-  const docRef = doc(db, 'documents', `${sessionId}_${documentMeta.documentId}`);
-  await setDoc(docRef, {
+  const docRef = db.collection('documents').doc(`${sessionId}_${documentMeta.documentId}`);
+  await docRef.set({
     ...documentMeta,
     sessionId,
     type: documentMeta.type || 'pdf',
   });
 
   // 2. Save chunks in batches (Firestore supports batches up to 500 documents)
-  const batch = writeBatch(db);
+  const batch = db.batch();
   chunks.forEach((chunk, i) => {
     const chunkId = `${sessionId}_${documentMeta.documentId}_${i}`;
-    const chunkRef = doc(db, 'chunks', chunkId);
+    const chunkRef = db.collection('chunks').doc(chunkId);
     batch.set(chunkRef, {
       ...chunk,
       sessionId,
@@ -87,12 +84,12 @@ export async function search(
   topK: number = 5
 ): Promise<(StoredChunk & { score: number })[]> {
   // Query all chunks for this session
-  const chunksRef = collection(db, 'chunks');
-  const q = query(chunksRef, where('sessionId', '==', sessionId));
-  const querySnapshot = await getDocs(q);
+  const chunksSnapshot = await db.collection('chunks')
+    .where('sessionId', '==', sessionId)
+    .get();
 
   const chunks: StoredChunk[] = [];
-  querySnapshot.forEach((docSnap) => {
+  chunksSnapshot.forEach((docSnap) => {
     chunks.push(docSnap.data() as StoredChunk);
   });
 
@@ -114,12 +111,12 @@ export async function search(
  * List all documents for this session from Firestore.
  */
 export async function listDocuments(sessionId: string): Promise<DocumentMeta[]> {
-  const docsRef = collection(db, 'documents');
-  const q = query(docsRef, where('sessionId', '==', sessionId));
-  const querySnapshot = await getDocs(q);
+  const docsSnapshot = await db.collection('documents')
+    .where('sessionId', '==', sessionId)
+    .get();
 
   const documents: DocumentMeta[] = [];
-  querySnapshot.forEach((docSnap) => {
+  docsSnapshot.forEach((docSnap) => {
     documents.push(docSnap.data() as DocumentMeta);
   });
 
@@ -133,12 +130,17 @@ export async function getDocumentChunks(
   sessionId: string,
   documentId?: string
 ): Promise<StoredChunk[]> {
-  const chunksRef = collection(db, 'chunks');
-  let q = query(chunksRef, where('sessionId', '==', sessionId));
+  let querySnapshot;
   if (documentId) {
-    q = query(chunksRef, where('sessionId', '==', sessionId), where('documentId', '==', documentId));
+    querySnapshot = await db.collection('chunks')
+      .where('sessionId', '==', sessionId)
+      .where('documentId', '==', documentId)
+      .get();
+  } else {
+    querySnapshot = await db.collection('chunks')
+      .where('sessionId', '==', sessionId)
+      .get();
   }
-  const querySnapshot = await getDocs(q);
 
   const chunks: StoredChunk[] = [];
   querySnapshot.forEach((docSnap) => {
@@ -154,24 +156,21 @@ export async function getDocumentChunks(
  */
 export async function deleteDocument(documentId: string, sessionId: string): Promise<boolean> {
   // 1. Delete document meta doc
-  const docRef = doc(db, 'documents', `${sessionId}_${documentId}`);
-  const docSnap = await getDoc(docRef);
-  if (!docSnap.exists()) {
+  const docRef = db.collection('documents').doc(`${sessionId}_${documentId}`);
+  const docSnap = await docRef.get();
+  if (!docSnap.exists) {
     return false;
   }
-  await deleteDoc(docRef);
+  await docRef.delete();
 
   // 2. Query and delete chunks in batches
-  const chunksRef = collection(db, 'chunks');
-  const q = query(
-    chunksRef,
-    where('sessionId', '==', sessionId),
-    where('documentId', '==', documentId)
-  );
-  const querySnapshot = await getDocs(q);
+  const chunksSnapshot = await db.collection('chunks')
+    .where('sessionId', '==', sessionId)
+    .where('documentId', '==', documentId)
+    .get();
 
-  const batch = writeBatch(db);
-  querySnapshot.forEach((docSnap) => {
+  const batch = db.batch();
+  chunksSnapshot.forEach((docSnap) => {
     batch.delete(docSnap.ref);
   });
 
@@ -183,8 +182,8 @@ export async function deleteDocument(documentId: string, sessionId: string): Pro
  * Save generated study kit in Firestore.
  */
 export async function saveCloudStudyKit(studyKit: Record<string, unknown>, sessionId: string): Promise<void> {
-  const kitRef = doc(db, 'studyKits', sessionId);
-  await setDoc(kitRef, {
+  const kitRef = db.collection('studyKits').doc(sessionId);
+  await kitRef.set({
     ...studyKit,
     sessionId,
   });
@@ -194,9 +193,9 @@ export async function saveCloudStudyKit(studyKit: Record<string, unknown>, sessi
  * Retrieve study kit for session from Firestore.
  */
 export async function getCloudStudyKit(sessionId: string): Promise<Record<string, unknown> | null> {
-  const kitRef = doc(db, 'studyKits', sessionId);
-  const kitSnap = await getDoc(kitRef);
-  if (!kitSnap.exists()) {
+  const kitRef = db.collection('studyKits').doc(sessionId);
+  const kitSnap = await kitRef.get();
+  if (!kitSnap.exists) {
     return null;
   }
   return kitSnap.data() as Record<string, unknown>;

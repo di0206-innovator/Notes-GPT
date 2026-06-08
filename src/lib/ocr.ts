@@ -1,3 +1,4 @@
+import './dns-patch';
 import { google } from '@ai-sdk/google';
 import { generateText } from 'ai';
 
@@ -7,7 +8,7 @@ if (!process.env.GOOGLE_GENERATIVE_AI_API_KEY && process.env.GEMINI_API_KEY) {
 }
 
 /**
- * Perform OCR on an image buffer using Google's Vision capabilities (gemini-2.5-flash).
+ * Perform OCR on an image buffer using Google's Vision capabilities (gemini-2.0-flash).
  * Extracts text, math formulas, headings, definitions, and highlights.
  * Flags unclear handwriting or blurry sections with [OCR_UNCERTAIN: reason].
  */
@@ -26,7 +27,7 @@ Follow these formatting rules strictly:
 
   try {
     const { text } = await generateText({
-      model: google('gemini-2.5-flash'),
+      model: google('gemini-2.0-flash'),
       messages: [
         {
           role: 'user',
@@ -41,6 +42,7 @@ Follow these formatting rules strictly:
         },
       ],
       temperature: 0.1,
+      maxRetries: 5,
     });
 
     return text?.trim() || '';

@@ -1,8 +1,9 @@
+import './dns-patch';
 import * as admin from 'firebase-admin';
 
 if (!admin.apps.length) {
   admin.initializeApp({
-    projectId: 'campus-gpt-support-v2026',
+    projectId: 'studio-9817976701-89717',
   });
 }
 

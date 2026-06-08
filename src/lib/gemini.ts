@@ -1,3 +1,4 @@
+import './dns-patch';
 import { google } from '@ai-sdk/google';
 import { generateText } from 'ai';
 
@@ -18,10 +19,11 @@ export async function generateChatResponse(
   const otherMessages = messages.filter((m) => m.role !== 'system');
 
   const { text } = await generateText({
-    model: google('gemini-2.5-flash'),
+    model: google('gemini-2.0-flash'),
     system: systemMessage?.content,
     messages: otherMessages as Array<{ role: 'user' | 'assistant'; content: string }>,
     temperature: temperature ?? 0.2,
+    maxRetries: 5,
   });
   
   return text || '';
