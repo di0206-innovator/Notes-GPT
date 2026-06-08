@@ -1,25 +1,44 @@
 @import "tailwindcss";
 
+:root {
+  --bg-color: #000000;
+  --fg-color: #FFFFFF;
+  --glow-color: rgba(255, 255, 255, 0.15);
+  --secondary-color: #888888;
+}
+
+.light-theme {
+  --bg-color: #FFFFFF;
+  --fg-color: #000000;
+  --glow-color: rgba(0, 0, 0, 0.15);
+  --secondary-color: #666666;
+}
+
 @theme {
-  --color-background: #000000;
-  --color-foreground: #FFFFFF;
-  --color-primary: #FFFFFF;
-  --color-primary-glow: rgba(255, 255, 255, 0.15);
-  --color-secondary: #888888;
-  --color-accent: #FFFFFF;
-  --color-glass-bg: #000000;
-  --color-glass-border: #FFFFFF;
+  --color-background: var(--bg-color);
+  --color-foreground: var(--fg-color);
+  --color-primary: var(--fg-color);
+  --color-primary-glow: var(--glow-color);
+  --color-secondary: var(--secondary-color);
+  --color-accent: var(--fg-color);
+  --color-glass-bg: var(--bg-color);
+  --color-glass-border: var(--fg-color);
+
+  /* Map standard tailwind black/white to variables so themes swap automatically */
+  --color-black: var(--bg-color);
+  --color-white: var(--fg-color);
 
   --font-sans: 'Courier New', Courier, Consolas, Monaco, monospace;
 }
 
 @layer base {
   body {
-    background-color: #000000;
-    color: #FFFFFF;
+    background-color: var(--bg-color);
+    color: var(--fg-color);
     font-family: var(--font-sans);
     overflow-x: hidden;
     margin: 0;
+    transition: background-color 0.2s ease, color 0.2s ease;
   }
 
   /* Form & Input Reset */
@@ -30,33 +49,33 @@
 
 /* Retro Brutalist Utilities */
 @utility retro-border {
-  border: 2px solid #FFFFFF;
+  border: 2px solid var(--fg-color);
 }
 
 @utility retro-border-thin {
-  border: 1px solid #FFFFFF;
+  border: 1px solid var(--fg-color);
 }
 
 @utility retro-border-dashed {
-  border: 2px dashed #FFFFFF;
+  border: 2px dashed var(--fg-color);
 }
 
 @utility retro-shadow {
-  box-shadow: 4px 4px 0px 0px #FFFFFF;
+  box-shadow: 4px 4px 0px 0px var(--fg-color);
 }
 
 @utility retro-shadow-black {
-  box-shadow: 4px 4px 0px 0px #000000;
+  box-shadow: 4px 4px 0px 0px var(--bg-color);
 }
 
 @utility retro-shadow-sm {
-  box-shadow: 2px 2px 0px 0px #FFFFFF;
+  box-shadow: 2px 2px 0px 0px var(--fg-color);
 }
 
 @utility retro-button {
-  background-color: #000000;
-  color: #FFFFFF;
-  border: 2px solid #FFFFFF;
+  background-color: var(--bg-color);
+  color: var(--fg-color);
+  border: 2px solid var(--fg-color);
   padding: 0.5rem 1rem;
   font-weight: bold;
   text-transform: uppercase;
@@ -66,8 +85,8 @@
   border-radius: 0px;
 
   &:hover:not(:disabled) {
-    background-color: #FFFFFF;
-    color: #000000;
+    background-color: var(--fg-color);
+    color: var(--bg-color);
   }
 
   &:active:not(:disabled) {
@@ -82,22 +101,22 @@
 }
 
 @utility retro-input {
-  background-color: #000000;
-  color: #FFFFFF;
-  border: 2px solid #FFFFFF;
+  background-color: var(--bg-color);
+  color: var(--fg-color);
+  border: 2px solid var(--fg-color);
   padding: 0.5rem 0.75rem;
   outline: none;
   border-radius: 0px;
 
   &:focus {
-    background-color: #0F0F0F;
-    box-shadow: 0 0 0 1px #FFFFFF;
+    background-color: var(--bg-color);
+    box-shadow: 0 0 0 1px var(--fg-color);
   }
 }
 
 @utility retro-card {
-  background-color: #000000;
-  border: 2px solid #FFFFFF;
+  background-color: var(--bg-color);
+  border: 2px solid var(--fg-color);
   padding: 1.5rem;
   border-radius: 0px;
 }
@@ -110,17 +129,17 @@
 }
 
 .custom-scrollbar::-webkit-scrollbar-track {
-  background: #000000;
-  border-left: 2px solid #FFFFFF;
+  background: var(--bg-color);
+  border-left: 2px solid var(--fg-color);
 }
 
 .custom-scrollbar::-webkit-scrollbar-thumb {
-  background: #FFFFFF;
-  border: 2px solid #000000;
+  background: var(--fg-color);
+  border: 2px solid var(--bg-color);
 }
 
 .custom-scrollbar::-webkit-scrollbar-thumb:hover {
-  background: #888888;
+  background: var(--secondary-color);
 }
 
 /* LaTeX / Math layout spacing */

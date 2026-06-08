@@ -3,12 +3,12 @@ import { getFirestore } from "firebase/firestore";
 import { getAuth } from "firebase/auth";
 
 const firebaseConfig = {
-  apiKey: "AIzaSyAxrnlr2ceYIGNfVFoZWargs6by12-Akwg",
-  authDomain: "nutrilens-amd.firebaseapp.com",
-  projectId: "nutrilens-amd",
-  storageBucket: "nutrilens-amd.firebasestorage.app",
-  messagingSenderId: "704404815769",
-  appId: "1:704404815769:web:c6ca279fe4242fd0ed9d08"
+  apiKey: "AIzaSyBdiElI2guegyLThJRuivfCsvZLW2Rbi-c",
+  authDomain: "campus-gpt-support-v2026.firebaseapp.com",
+  projectId: "campus-gpt-support-v2026",
+  storageBucket: "campus-gpt-support-v2026.firebasestorage.app",
+  messagingSenderId: "580147591710",
+  appId: "1:580147591710:web:8c986eee49d5357d178c0f"
 };
 
 const app = initializeApp(firebaseConfig);

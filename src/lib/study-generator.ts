@@ -1,4 +1,4 @@
-import { generateChatResponse } from './openai';
+import { generateChatResponse } from './gemini';
 import { getDocumentChunks, StoredChunk } from './vector-store';
 
 export interface Flashcard {

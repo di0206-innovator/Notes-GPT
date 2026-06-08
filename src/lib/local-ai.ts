@@ -99,7 +99,8 @@ export async function getLocalAISupport(): Promise<LocalAIStatus> {
  */
 export async function generateLocalResponse(
   systemPrompt: string,
-  userPrompt: string
+  userPrompt: string,
+  temperature?: number
 ): Promise<string> {
   const support = await getLocalAISupport();
   if (!support.available) {
@@ -113,17 +114,17 @@ export async function generateLocalResponse(
     if (win.ai && win.ai.languageModel) {
       session = await win.ai.languageModel.create({
         systemPrompt: systemPrompt,
-        temperature: 0.2,
+        temperature: temperature ?? 0.2,
       });
     } else if (win.ai && win.ai.assistant) {
       session = await win.ai.assistant.create({
         systemPrompt: systemPrompt,
-        temperature: 0.2,
+        temperature: temperature ?? 0.2,
       });
     } else if (win.assistant) {
       session = await win.assistant.create({
         systemPrompt: systemPrompt,
-        temperature: 0.2,
+        temperature: temperature ?? 0.2,
       });
     }
 

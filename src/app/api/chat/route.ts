@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { retrieveContext, formatContextForLLM } from '@/lib/rag-pipeline';
-import { generateChatResponse } from '@/lib/openai';
+import { generateChatResponse } from '@/lib/gemini';
 import { verifySession } from '@/lib/firebase-admin';
 
 export async function POST(request: NextRequest) {
@@ -15,7 +15,7 @@ export async function POST(request: NextRequest) {
     }
 
     const body = await request.json();
-    const { messages } = body;
+    const { messages, temperature, topK } = body;
     
     if (!messages || !Array.isArray(messages) || messages.length === 0) {
       return NextResponse.json({ error: 'Valid messages array is required' }, { status: 400 });
@@ -30,7 +30,7 @@ export async function POST(request: NextRequest) {
     const query = latestMessage.content;
     
     // 1. Retrieve relevant context via the RAG pipeline
-    const relevantChunks = await retrieveContext(query, sessionId, 5);
+    const relevantChunks = await retrieveContext(query, sessionId, typeof topK === 'number' ? topK : 5);
     
     // 2. Format context for the LLM
     const contextText = formatContextForLLM(relevantChunks);
@@ -50,14 +50,14 @@ Here is the retrieved context:
 ${contextText}
 `;
 
-    // Prepare messages for OpenAI
+    // Prepare messages for Gemini
     const apiMessages = [
       { role: 'system', content: systemPrompt },
       ...messages
     ];
 
     // 4. Generate Response
-    const responseText = await generateChatResponse(apiMessages);
+    const responseText = await generateChatResponse(apiMessages, typeof temperature === 'number' ? temperature : undefined);
 
     return NextResponse.json({
       role: 'assistant',

@@ -60,8 +60,8 @@ export default function AuthGate({ onAuthenticated }: AuthGateProps) {
       onAuthenticated(userCredential.user.uid);
     } catch (err) {
       const errorObj = err as Error;
-      console.error('Guest auth error:', errorObj);
-      setError(errorObj.message || 'Failed to initialize guest session.');
+      console.warn('Firebase guest auth failed, falling back to local offline session:', errorObj);
+      onAuthenticated('local-guest-user');
     } finally {
       setGuestLoading(false);
     }

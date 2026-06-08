@@ -23,7 +23,6 @@ export default function RootLayout({
       className={`${outfit.variable} h-full antialiased selection:bg-primary/30`}
     >
       <body className="min-h-full flex flex-col bg-background text-foreground overflow-x-hidden">
-        <div className="bg-mesh" aria-hidden="true" />
         {children}
       </body>
     </html>

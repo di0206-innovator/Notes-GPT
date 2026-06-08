@@ -34,11 +34,6 @@ yarn-error.log*
 .env*
 !.env.example
 
-# RAG data (uploads + vector store)
-/data/uploads/*
-!/data/uploads/.gitkeep
-/data/vectors.json
-
 # vercel
 .vercel
 

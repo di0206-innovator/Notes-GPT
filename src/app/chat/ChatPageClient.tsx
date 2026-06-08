@@ -12,12 +12,16 @@ import {
   Cpu,
   LogOut,
   Terminal,
+  Settings,
+  User,
 } from 'lucide-react';
 import { AnimatePresence, motion } from 'framer-motion';
 import ChatInterface from '@/components/ChatInterface';
 import DocumentPanel from '@/components/DocumentPanel';
 import StudyWorkspace from '@/components/StudyWorkspace';
 import AuthGate from '@/components/AuthGate';
+import SettingsModal from '@/components/SettingsModal';
+import ProfileModal from '@/components/ProfileModal';
 import { auth } from '@/lib/firebase';
 import { onAuthStateChanged, signOut } from 'firebase/auth';
 import { StudyKit } from '@/lib/study-generator';
@@ -32,7 +36,20 @@ export default function ChatPageClient() {
   const [genStep, setGenStep] = useState<string>('');
   const [layoutMode, setLayoutMode] = useState<'split' | 'workspace' | 'chat'>('split');
   const [refreshCounter, setRefreshCounter] = useState(0);
-  const [mode, setMode] = useState<'cloud' | 'local'>('cloud');
+  const [mode, setMode] = useState<'cloud' | 'local'>(() => {
+    if (typeof window !== 'undefined') {
+      try {
+        const stored = localStorage.getItem('campus_study_settings');
+        if (stored) {
+          const parsed = JSON.parse(stored);
+          return parsed.defaultMode === 'local' ? 'local' : 'cloud';
+        }
+      } catch (e) {
+        console.error('Failed to parse stored defaultMode settings:', e);
+      }
+    }
+    return 'cloud';
+  });
 
   // Authentication State
   const [userId, setUserId] = useState<string | null>(null);
@@ -42,6 +59,60 @@ export default function ChatPageClient() {
     available: false,
     message: 'Checking...',
   });
+
+  // User Configurable Settings
+  const [settings, setSettings] = useState<{
+    theme: 'dark' | 'light';
+    topK: number;
+    temperature: number;
+    defaultMode: 'cloud' | 'local';
+  }>(() => {
+    if (typeof window !== 'undefined') {
+      try {
+        const stored = localStorage.getItem('campus_study_settings');
+        if (stored) {
+          const parsed = JSON.parse(stored);
+          return {
+            theme: parsed.theme === 'light' ? 'light' : 'dark',
+            topK: typeof parsed.topK === 'number' ? parsed.topK : 5,
+            temperature: typeof parsed.temperature === 'number' ? parsed.temperature : 0.2,
+            defaultMode: parsed.defaultMode === 'local' ? 'local' : 'cloud',
+          };
+        }
+      } catch (e) {
+        console.error('Failed to parse stored settings:', e);
+      }
+    }
+    return {
+      theme: 'dark',
+      topK: 5,
+      temperature: 0.2,
+      defaultMode: 'cloud',
+    };
+  });
+
+  // Modal display toggles
+  const [isSettingsOpen, setIsSettingsOpen] = useState(false);
+  const [isProfileOpen, setIsProfileOpen] = useState(false);
+
+  // Apply CSS Class for Theme
+  useEffect(() => {
+    if (settings.theme === 'light') {
+      document.documentElement.classList.add('light-theme');
+    } else {
+      document.documentElement.classList.remove('light-theme');
+    }
+  }, [settings.theme]);
+
+  const handleUpdateSettings = (newSettings: typeof settings) => {
+    setSettings(newSettings);
+    setMode(newSettings.defaultMode);
+    try {
+      localStorage.setItem('campus_study_settings', JSON.stringify(newSettings));
+    } catch (e) {
+      console.error('Failed to save settings:', e);
+    }
+  };
 
   // Listen for Firebase Authentication changes
   useEffect(() => {
@@ -335,6 +406,26 @@ export default function ChatPageClient() {
               </div>
             )}
 
+            {/* Profile Button */}
+            <button
+              onClick={() => setIsProfileOpen(true)}
+              className="retro-button py-1.5 px-3 text-xs flex items-center gap-1.5 font-bold"
+              title="View User Profile"
+            >
+              <User className="w-3.5 h-3.5" />
+              <span className="hidden lg:inline">PROFILE</span>
+            </button>
+
+            {/* Settings Button */}
+            <button
+              onClick={() => setIsSettingsOpen(true)}
+              className="retro-button py-1.5 px-3 text-xs flex items-center gap-1.5 font-bold"
+              title="Open System Settings"
+            >
+              <Settings className="w-3.5 h-3.5" />
+              <span className="hidden lg:inline">SETTINGS</span>
+            </button>
+
             {/* Logout Button */}
             <button
               onClick={handleLogout}
@@ -378,7 +469,7 @@ export default function ChatPageClient() {
 
               {/* Right Chat companion */}
               <div className="h-full min-h-0">
-                <ChatInterface mode={mode} />
+                <ChatInterface mode={mode} temperature={settings.temperature} topK={settings.topK} />
               </div>
             </div>
           ) : (
@@ -402,7 +493,7 @@ export default function ChatPageClient() {
                 <div className={`h-full min-h-0 flex flex-col transition-all duration-300 ${
                   layoutMode === 'split' ? 'w-full lg:w-[45%] flex-shrink-0' : 'w-full'
                 }`}>
-                  <ChatInterface mode={mode} />
+                  <ChatInterface mode={mode} temperature={settings.temperature} topK={settings.topK} />
                 </div>
               )}
             </div>
@@ -441,6 +532,28 @@ export default function ChatPageClient() {
                 </div>
               </div>
             </motion.div>
+          )}
+        </AnimatePresence>
+
+        <AnimatePresence>
+          {isSettingsOpen && (
+            <SettingsModal
+              isOpen={isSettingsOpen}
+              onClose={() => setIsSettingsOpen(false)}
+              settings={settings}
+              onUpdateSettings={handleUpdateSettings}
+            />
+          )}
+        </AnimatePresence>
+
+        <AnimatePresence>
+          {isProfileOpen && (
+            <ProfileModal
+              isOpen={isProfileOpen}
+              onClose={() => setIsProfileOpen(false)}
+              userId={userId}
+              mode={mode}
+            />
           )}
         </AnimatePresence>
       </main>

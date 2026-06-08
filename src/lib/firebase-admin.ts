@@ -2,7 +2,7 @@ import * as admin from 'firebase-admin';
 
 if (!admin.apps.length) {
   admin.initializeApp({
-    projectId: 'nutrilens-amd',
+    projectId: 'campus-gpt-support-v2026',
   });
 }
 

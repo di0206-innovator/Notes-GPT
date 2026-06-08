@@ -21,9 +21,11 @@ const SUGGESTED_CHIPS = [
 
 interface ChatInterfaceProps {
   mode: 'cloud' | 'local';
+  temperature?: number;
+  topK?: number;
 }
 
-export default function ChatInterface({ mode }: ChatInterfaceProps) {
+export default function ChatInterface({ mode, temperature = 0.2, topK = 5 }: ChatInterfaceProps) {
   const [messages, setMessages] = useState<Message[]>([
     {
       role: 'assistant',
@@ -55,12 +57,18 @@ export default function ChatInterface({ mode }: ChatInterfaceProps) {
 
     try {
       if (mode === 'local') {
-        const localChunks = await searchLocalChunks(textToSend, 5);
+        const localChunks = await searchLocalChunks(textToSend, topK);
         
         let contextText = '';
         localChunks.forEach((chunk) => {
           contextText += `[File: ${chunk.filename}, Page ${chunk.pageNumber || 1}]\n${chunk.content}\n\n`;
         });
+
+        // Build conversation history for multi-turn context
+        const recentHistory = newMessages
+          .slice(-10) // Keep last 10 messages for context window management
+          .map((m) => `${m.role === 'user' ? 'USER' : 'ASSISTANT'}: ${m.content}`)
+          .join('\n\n');
 
         const systemPrompt = `You are a highly precise and strict AI study assistant for CampusStudyGPT.
 Your primary task is to answer user questions based ONLY on the provided context excerpts from the uploaded study materials.
@@ -81,7 +89,12 @@ ${contextText || 'No local document context available.'}
           throw new Error(`Local AI is not available: ${support.message}`);
         }
 
-        const reply = await generateLocalResponse(systemPrompt, textToSend);
+        // Include conversation history in the user prompt for multi-turn
+        const userPromptWithHistory = recentHistory
+          ? `Previous conversation:\n${recentHistory}\n\nNow answer the latest question above.`
+          : textToSend;
+
+        const reply = await generateLocalResponse(systemPrompt, userPromptWithHistory, temperature);
         
         setMessages((prev) => [
           ...prev,
@@ -95,7 +108,7 @@ ${contextText || 'No local document context available.'}
             'Content-Type': 'application/json',
             'Authorization': `Bearer ${idToken}`,
           },
-          body: JSON.stringify({ messages: newMessages }),
+          body: JSON.stringify({ messages: newMessages, temperature, topK }),
         });
 
         if (!response.ok) {

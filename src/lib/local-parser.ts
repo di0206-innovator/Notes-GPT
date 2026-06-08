@@ -25,7 +25,15 @@ export async function parsePDFClient(file: File, onProgress?: (msg: string) => v
   
   onProgress?.('Loading PDF library...');
   const pdfjsLib = await import('pdfjs-dist');
-  pdfjsLib.GlobalWorkerOptions.workerSrc = `//cdnjs.cloudflare.com/ajax/libs/pdf.js/${pdfjsLib.version || '3.11.174'}/pdf.worker.min.js`;
+  // Use local worker from npm package for offline support; CDN fallback
+  try {
+    // @ts-expect-error - pdfjs worker file lacks typescript types
+    const workerModule = await import('pdfjs-dist/build/pdf.worker.min.mjs');
+    pdfjsLib.GlobalWorkerOptions.workerSrc = workerModule.default || workerModule;
+  } catch {
+    // Fallback: use CDN worker (requires network)
+    pdfjsLib.GlobalWorkerOptions.workerSrc = `//cdnjs.cloudflare.com/ajax/libs/pdf.js/${pdfjsLib.version || '4.0.379'}/pdf.worker.min.mjs`;
+  }
 
   onProgress?.('Loading PDF document...');
   const loadingTask = pdfjsLib.getDocument({ data: arrayBuffer });

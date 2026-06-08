@@ -11,7 +11,8 @@ if (!process.env.GOOGLE_GENERATIVE_AI_API_KEY) {
 }
 
 export async function generateChatResponse(
-  messages: Array<{ role: 'user' | 'assistant' | 'system'; content: string }>
+  messages: Array<{ role: 'user' | 'assistant' | 'system'; content: string }>,
+  temperature?: number
 ): Promise<string> {
   const systemMessage = messages.find((m) => m.role === 'system');
   const otherMessages = messages.filter((m) => m.role !== 'system');
@@ -20,7 +21,7 @@ export async function generateChatResponse(
     model: google('gemini-2.5-flash'),
     system: systemMessage?.content,
     messages: otherMessages as Array<{ role: 'user' | 'assistant'; content: string }>,
-    temperature: 0.2,
+    temperature: temperature ?? 0.2,
   });
   
   return text || '';

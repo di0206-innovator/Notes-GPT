@@ -84,7 +84,7 @@ export async function ingestDocument(
 }
 
 /**
- * Image ingestion pipeline: Image buffer → OpenAI Vision OCR → chunk → embed → store.
+ * Image ingestion pipeline: Image buffer → Gemini Vision OCR → chunk → embed → store.
  */
 export async function ingestImageDocument(
   buffer: Buffer,
