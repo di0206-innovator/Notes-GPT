@@ -6,6 +6,7 @@ import { Markdown } from './Markdown';
 import { searchLocalChunks } from '@/lib/indexed-db-store';
 import { getLocalAISupport, generateLocalResponse } from '@/lib/local-ai';
 import { auth } from '@/lib/firebase';
+import { Settings } from './SettingsModal';
 
 type Message = {
   role: 'user' | 'assistant' | 'system';
@@ -23,9 +24,15 @@ interface ChatInterfaceProps {
   mode: 'cloud' | 'local';
   temperature?: number;
   topK?: number;
+  settings?: Settings;
 }
 
-export default function ChatInterface({ mode, temperature = 0.2, topK = 5 }: ChatInterfaceProps) {
+export default function ChatInterface({
+  mode,
+  temperature = 0.2,
+  topK = 5,
+  settings,
+}: ChatInterfaceProps) {
   const [messages, setMessages] = useState<Message[]>([
     {
       role: 'assistant',
@@ -35,6 +42,7 @@ export default function ChatInterface({ mode, temperature = 0.2, topK = 5 }: Cha
   ]);
   const [input, setInput] = useState('');
   const [isLoading, setIsLoading] = useState(false);
+  const [progressMessage, setProgressMessage] = useState('');
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
   const scrollToBottom = () => {
@@ -54,6 +62,7 @@ export default function ChatInterface({ mode, temperature = 0.2, topK = 5 }: Cha
     setMessages(newMessages);
     setInput('');
     setIsLoading(true);
+    setProgressMessage('');
 
     try {
       if (mode === 'local') {
@@ -84,7 +93,7 @@ Here is the retrieved context:
 ${contextText || 'No local document context available.'}
 `;
 
-        const support = await getLocalAISupport();
+        const support = await getLocalAISupport(settings);
         if (!support.available) {
           throw new Error(`Local AI is not available: ${support.message}`);
         }
@@ -94,7 +103,13 @@ ${contextText || 'No local document context available.'}
           ? `Previous conversation:\n${recentHistory}\n\nNow answer the latest question above.`
           : textToSend;
 
-        const reply = await generateLocalResponse(systemPrompt, userPromptWithHistory, temperature);
+        const reply = await generateLocalResponse(
+          systemPrompt,
+          userPromptWithHistory,
+          temperature,
+          settings,
+          (step) => setProgressMessage(step)
+        );
         
         setMessages((prev) => [
           ...prev,
@@ -120,17 +135,41 @@ ${contextText || 'No local document context available.'}
       }
     } catch (error) {
       console.error('Error sending message:', error);
-      const err = error as Error;
       
-      const isLocalError = mode === 'local' && (err.message || '').includes('Local AI');
-      const content = isLocalError 
-        ? `On-Device AI is not active. **To enable Gemini Nano in Chrome:**\n\n` +
-          `1. Open **chrome://flags** in Chrome.\n` +
-          `2. Search for **"Prompt API for Gemini Nano"** and set to **Enabled**.\n` +
-          `3. Search for **"Enables optimization guide text"** and set to **Enabled ByPass list**.\n` +
-          `4. Restart your browser and allow Chrome to download the model (takes a few minutes).\n\n` +
-          `*Or switch to **Cloud Mode** in the top bar to use API-based learning.*`
-        : 'Sorry, I encountered an error answering your question. Please try again.';
+      const isLocalError = mode === 'local';
+      let content = 'Sorry, I encountered an error answering your question. Please try again.';
+
+      if (isLocalError) {
+        const engine = settings?.localProvider || 'window-ai';
+        if (engine === 'ollama') {
+          content = `### 🐑 Ollama Server Connection Failed\n\n` +
+            `Could not run Local AI query using model \`${settings?.ollamaModel || 'gemma2:2b'}\`.\n\n` +
+            `**Troubleshooting Steps:**\n` +
+            `1. Make sure the Ollama application is running on your Mac.\n` +
+            `2. Open your terminal and verify the model is pulled:\n` +
+            `   \`\`\`bash\n` +
+            `   ollama run ${settings?.ollamaModel || 'gemma2:2b'}\n` +
+            `   \`\`\`\n` +
+            `3. Check that your server endpoint URL in **Settings** matches: \`${settings?.ollamaUrl || 'http://localhost:11434'}\`.\n` +
+            `4. Go to **Settings** and click **Test Connection** to confirm status.`;
+        } else if (engine === 'web-llm') {
+          content = `### 🌐 WebLLM WebGPU Error\n\n` +
+            `Failed to execute model \`${settings?.webLlmModel || 'Phi-3-mini'}\` in your browser.\n\n` +
+            `**Troubleshooting Steps:**\n` +
+            `1. Verify your browser supports **WebGPU** (supported natively in Chrome 113+, Edge 113+, Safari 18+).\n` +
+            `2. On first usage, loading weights (~1.5GB to 2.5GB) requires a stable internet connection. Ensure download completed successfully.\n` +
+            `3. If the browser ran out of VRAM/memory, try reloading the page and choosing a smaller model like \`Qwen2.5-1.5B\` in **Settings**.`;
+        } else {
+          content = `### 💻 Built-in AI (window.ai) Failed\n\n` +
+            `Chrome built-in Gemini Nano model is not active on your browser.\n\n` +
+            `**To enable it:**\n` +
+            `1. Open **chrome://flags** in Chrome.\n` +
+            `2. Enable **"Prompt API for Gemini Nano"**.\n` +
+            `3. Enable **"Enables optimization guide text"** (set to *Enabled Bypass list*).\n` +
+            `4. Restart your browser and allow Chrome to download the model background service.\n\n` +
+            `*Or, switch to **Ollama** or **WebLLM** inside **Settings**, or toggle to **Cloud Mode** in the top bar.*`;
+        }
+      }
 
       setMessages((prev) => [
         ...prev,
@@ -141,6 +180,7 @@ ${contextText || 'No local document context available.'}
       ]);
     } finally {
       setIsLoading(false);
+      setProgressMessage('');
     }
   };
 
@@ -161,7 +201,7 @@ ${contextText || 'No local document context available.'}
           </h2>
         </div>
         <span className="text-[10px] uppercase font-mono text-white/50">
-          Mode: {mode.toUpperCase()}
+          Mode: {mode.toUpperCase()} {mode === 'local' && `(${settings?.localProvider || 'window-ai'})`}
         </span>
       </div>
 
@@ -206,7 +246,7 @@ ${contextText || 'No local document context available.'}
               <Terminal className="w-4 h-4" />
             </div>
             <div className="bg-black text-white border-2 border-white p-4 font-mono text-xs animate-flash">
-              [ ACCESSING COMPREHENSION DIRECTORY... ]
+              {progressMessage ? `[ ${progressMessage.toUpperCase()} ]` : '[ ACCESSING COMPREHENSION DIRECTORY... ]'}
             </div>
           </div>
         )}
@@ -222,7 +262,7 @@ ${contextText || 'No local document context available.'}
               key={idx}
               onClick={() => sendMessage(chip.prompt)}
               disabled={isLoading}
-              className="retro-button py-1.5 px-3 text-[10px] font-mono font-bold"
+              className="retro-button py-1.5 px-3 text-[10px] font-mono font-bold cursor-pointer"
             >
               {chip.label}
             </button>
@@ -242,7 +282,7 @@ ${contextText || 'No local document context available.'}
           <button
             type="submit"
             disabled={isLoading || !input.trim()}
-            className="retro-button py-3.5 px-6 font-mono text-xs flex items-center justify-center"
+            className="retro-button py-3.5 px-6 font-mono text-xs flex items-center justify-center cursor-pointer"
           >
             <Send className="w-4 h-4" />
           </button>

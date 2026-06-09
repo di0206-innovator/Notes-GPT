@@ -15,23 +15,14 @@ export const adminAuth = admin.auth();
  */
 export async function verifySession(request: Request): Promise<string> {
   const authHeader = request.headers.get('authorization');
-  const isDev = process.env.NODE_ENV === 'development' || !process.env.NODE_ENV;
 
   if (!authHeader || !authHeader.startsWith('Bearer ')) {
-    if (isDev) {
-      console.warn('[verifySession] Missing Authorization header, falling back to dev-guest-uid for testing.');
-      return 'dev-guest-uid';
-    }
     throw new Error('Unauthorized: Missing or invalid Authorization header');
   }
 
   const token = authHeader.split('Bearer ')[1];
 
   if (token === 'undefined' || token === 'null' || !token) {
-    if (isDev) {
-      console.warn('[verifySession] Token is undefined/null, falling back to dev-guest-uid for testing.');
-      return 'dev-guest-uid';
-    }
     throw new Error('Unauthorized: Invalid authentication token');
   }
 
@@ -40,10 +31,6 @@ export async function verifySession(request: Request): Promise<string> {
     return decodedToken.uid;
   } catch (error) {
     console.error('Error verifying Firebase ID token:', error);
-    if (isDev) {
-      console.warn('[verifySession] Token verification failed, falling back to dev-guest-uid for testing.');
-      return 'dev-guest-uid';
-    }
     throw new Error('Unauthorized: Invalid authentication token');
   }
 }

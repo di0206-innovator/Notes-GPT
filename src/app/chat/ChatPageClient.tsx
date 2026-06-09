@@ -66,6 +66,10 @@ export default function ChatPageClient() {
     topK: number;
     temperature: number;
     defaultMode: 'cloud' | 'local';
+    localProvider: 'window-ai' | 'ollama' | 'web-llm';
+    ollamaUrl: string;
+    ollamaModel: string;
+    webLlmModel: string;
   }>(() => {
     if (typeof window !== 'undefined') {
       try {
@@ -77,6 +81,10 @@ export default function ChatPageClient() {
             topK: typeof parsed.topK === 'number' ? parsed.topK : 5,
             temperature: typeof parsed.temperature === 'number' ? parsed.temperature : 0.2,
             defaultMode: parsed.defaultMode === 'local' ? 'local' : 'cloud',
+            localProvider: parsed.localProvider || 'window-ai',
+            ollamaUrl: parsed.ollamaUrl || 'http://localhost:11434',
+            ollamaModel: parsed.ollamaModel || 'deepseek-r1:8b',
+            webLlmModel: parsed.webLlmModel || 'Phi-3-mini-4k-instruct-q4f16-1K-MLC',
           };
         }
       } catch (e) {
@@ -88,6 +96,10 @@ export default function ChatPageClient() {
       topK: 5,
       temperature: 0.2,
       defaultMode: 'cloud',
+      localProvider: 'window-ai',
+      ollamaUrl: 'http://localhost:11434',
+      ollamaModel: 'deepseek-r1:8b',
+      webLlmModel: 'Phi-3-mini-4k-instruct-q4f16-1K-MLC',
     };
   });
 
@@ -127,22 +139,19 @@ export default function ChatPageClient() {
     return () => unsubscribe();
   }, []);
 
-  // Check browser local AI support on mount
+  // Check browser local AI support when settings or provider changes
   useEffect(() => {
     const checkLocalAI = async () => {
       try {
-        const support = await getLocalAISupport();
+        const support = await getLocalAISupport(settings);
         setLocalAISupport(support);
-        if (support.available) {
-          // If Gemini Nano is ready, auto-select local mode to save tokens/energy
-          setMode('local');
-        }
       } catch (e) {
         console.error('Failed to query local AI support:', e);
       }
     };
     checkLocalAI();
-  }, []);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [settings.localProvider, settings.ollamaUrl, settings.ollamaModel, settings.webLlmModel]);
 
   const fetchStudyKit = useCallback(async (activeMode = mode, activeSessionId = userId) => {
     if (!activeSessionId) return;
@@ -201,7 +210,7 @@ export default function ChatPageClient() {
 
         const kit = await generateLocalStudyKit(chunks, (step) => {
           setGenStep(step);
-        });
+        }, settings);
 
         setStudyKit(kit as unknown as StudyKit);
         setLayoutMode('split');
@@ -469,7 +478,7 @@ export default function ChatPageClient() {
 
               {/* Right Chat companion */}
               <div className="h-full min-h-0">
-                <ChatInterface mode={mode} temperature={settings.temperature} topK={settings.topK} />
+                <ChatInterface mode={mode} temperature={settings.temperature} topK={settings.topK} settings={settings} />
               </div>
             </div>
           ) : (
@@ -493,7 +502,7 @@ export default function ChatPageClient() {
                 <div className={`h-full min-h-0 flex flex-col transition-all duration-300 ${
                   layoutMode === 'split' ? 'w-full lg:w-[45%] flex-shrink-0' : 'w-full'
                 }`}>
-                  <ChatInterface mode={mode} temperature={settings.temperature} topK={settings.topK} />
+                  <ChatInterface mode={mode} temperature={settings.temperature} topK={settings.topK} settings={settings} />
                 </div>
               )}
             </div>

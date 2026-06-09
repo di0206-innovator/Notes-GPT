@@ -10,6 +10,7 @@
   },
   "dependencies": {
     "@ai-sdk/google": "^3.0.67",
+    "@mlc-ai/web-llm": "^0.2.84",
     "ai": "^6.0.168",
     "firebase": "^12.12.1",
     "firebase-admin": "^13.8.0",

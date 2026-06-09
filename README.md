@@ -1,103 +1,87 @@
 # CampusStudyGPT 📚
 
-An AI-powered offline-capable study companion that transforms your PDFs and handwritten notes into structured revision materials, flashcards, question banks, and mock exams. Works like NotebookLM — but runs locally in your browser.
+An AI-powered, offline-capable study companion that transforms your PDFs, textbooks, and handwritten notes into structured revision materials, flashcards, question banks, and mock exams. Works like NotebookLM — but runs locally on your device or in-browser.
 
-## Features
+---
 
-- **📄 Document Ingestion** — Upload PDFs and note images (PNG/JPG/WEBP). Text is extracted via PDF.js and Tesseract.js OCR, then chunked and indexed.
-- **💬 RAG Chat Assistant** — Ask questions grounded in your uploaded study materials. Uses retrieval-augmented generation with inline source citations.
-- **📝 Revision Notes** — Auto-generates structured, topic-wise revision summaries with LaTeX math support.
-- **❓ Question Bank** — Creates MCQs, short-answer, and long analytical questions with model answers.
-- **🃏 Flashcards** — Interactive flip-card study deck generated from your notes.
-- **📑 Mock Exam Simulator** — Produces university-style exam papers with answer keys and grading rubrics. Print-ready.
-- **🔒 Offline Local Mode** — Runs entirely on-device using Chrome's built-in Gemini Nano (via Prompt API). Zero API calls, zero tokens, full privacy.
-- **☁️ Cloud Mode** — Uses Gemini 2.5 Flash API for higher quality generation and vector embeddings stored in Firestore.
+## Key Features
 
-## Tech Stack
+- **📄 Robust Document Ingestion** — Upload textbook PDFs and note images (PNG/JPG/WEBP). Extract text locally via PDF.js and Tesseract.js OCR, or on the server via Gemini Vision.
+- **💬 Context-Grounded Chat** — Ask questions about your materials. Answers are strictly grounded in retrieved segments and feature inline source citations.
+- **📝 Revision Notes** — Automatically generates structured, topic-wise study notes with complete LaTeX math equation formatting ($$...$$).
+- **❓ Practice Q&A Bank** — Creates Multiple Choice Questions (MCQs), short definitions, and long analytical prompts with full answer keys.
+- **🃏 Memory Flashcards** — Study with a client-side interactive flip-card review deck built dynamically from notes.
+- **📑 Mock Exam Simulator** — Generates university-style exam papers with complete rubrics and answer sheets, styled for clean physical printing.
+- **🔒 Multi-Engine Local AI** — Supports three local execution methods for full offline privacy:
+  - **Ollama Local Server** — metal-accelerated, high-performance offline queries via system daemons.
+  - **WebLLM WebGPU** — in-browser WebGPU runtime model runner; requires zero external apps.
+  - **Chrome window.ai (Gemini Nano)** — built-in Chrome experimental prompt engine.
+- **☁️ Cloud Mode** — Employs `gemini-2.0-flash` for high-throughput generation and semantic vector search backed by Firestore.
+
+---
+
+## Technical Stack
 
 | Layer | Technology |
-|-------|-----------|
-| Framework | Next.js 16 (App Router) |
-| UI | React 19, Tailwind CSS 4, Framer Motion |
-| AI (Cloud) | Gemini 2.5 Flash via Vercel AI SDK |
-| AI (Local) | Chrome Built-in AI (Gemini Nano) |
-| PDF Parsing | PDF.js (client), pdf-parse (server) |
-| OCR | Tesseract.js (client), Gemini Vision (server) |
-| Vector Store | Firestore + cosine similarity |
-| Local Storage | IndexedDB with TF-IDF search |
-| Auth | Firebase Authentication |
+|---|---|
+| **Framework** | Next.js 16 (App Router) |
+| **Styling & UI** | React 19, Tailwind CSS 4, Framer Motion, Lucide Icons |
+| **AI (Cloud)** | Gemini 2.0 Flash via Vercel AI SDK |
+| **AI (Local)** | Ollama (Local Daemon), WebLLM (Browser WebGPU), Chrome window.ai |
+| **Vector DB** | Firestore vector collections + Cosine similarity (Cloud) |
+| **Client Storage** | IndexedDB with Local TF-IDF search index |
+| **PDF Extraction** | PDF.js (Browser), pdf-parse (Node.js API) |
+| **OCR Engines** | Tesseract.js (Client), Gemini Generative Vision (Server) |
+| **User Identity** | Firebase Auth (Guest Sessions & Email Signups) |
 
-## Getting Started
+---
 
-### Prerequisites
-- Node.js 18+
-- A Gemini API key (for cloud mode)
+## Setup & Run Instructions
 
-### Setup
+For detailed installation and setup instructions, please see the [CONTRIBUTING.md](CONTRIBUTING.md) guide.
 
-```bash
-# Install dependencies
-npm install
+### Quick Start:
 
-# Copy environment variables
-cp .env.example .env
-# Edit .env and add your GEMINI_API_KEY
+1. **Clone & Install**:
+   ```bash
+   git clone https://github.com/your-username/Rag-Campus-GPT.git
+   cd Rag-Campus-GPT
+   npm install
+   ```
+2. **Environment**:
+   Copy `.env.example` to `.env` and paste your Google Gemini API Key:
+   ```bash
+   GEMINI_API_KEY=your-gemini-key
+   ```
+3. **Run Dev Server**:
+   ```bash
+   npm run dev
+   ```
+   Open [http://localhost:3000](http://localhost:3000) in your web browser.
 
-# Run development server
-npm run dev
-```
+---
 
-Open [http://localhost:3000](http://localhost:3000) in your browser.
+## Local AI Setup
 
-### Enabling Local/Offline Mode
+To run Local AI offline without consuming any cloud tokens:
 
-To use the fully offline mode with Chrome's built-in Gemini Nano:
+### 1. Using Ollama (Recommended)
+1. Download and start [Ollama](https://ollama.com).
+2. Download a model:
+   ```bash
+   ollama run deepseek-r1:8b
+   # Or a smaller model:
+   ollama run gemma2:2b
+   ```
+3. Open settings in the app dashboard, select **Ollama** as your Local Engine, enter the model name (`deepseek-r1:8b`), and verify connection status.
 
-1. Open `chrome://flags` in Chrome 127+
-2. Enable **"Prompt API for Gemini Nano"**
-3. Enable **"Enables optimization guide on device"** → set to **Enabled BypassPerfRequirement**
-4. Restart Chrome and wait for the model to download (~1.7 GB)
-5. The app will auto-detect Gemini Nano and switch to Local mode
+### 2. Using WebLLM (WebGPU)
+1. Open settings in the app.
+2. Select **WebLLM** as your Local Engine.
+3. Select a model version (e.g. `Phi-3-Mini` or `Gemma-2B`). The app will cache weights in your browser local cache and run inference offline using WebGPU.
 
-## Project Structure
-
-```
-src/
-├── app/
-│   ├── api/
-│   │   ├── chat/route.ts          # RAG chat endpoint
-│   │   ├── documents/
-│   │   │   ├── route.ts           # List/delete documents
-│   │   │   └── upload/route.ts    # Upload & ingest documents
-│   │   └── study-materials/route.ts # Generate/fetch study kit
-│   ├── chat/
-│   │   ├── page.tsx               # Chat page entry
-│   │   └── ChatPageClient.tsx     # Main app shell
-│   ├── globals.css                # Design system (retro brutalist)
-│   ├── layout.tsx                 # Root layout
-│   └── page.tsx                   # Landing page
-├── components/
-│   ├── AuthGate.tsx               # Login/signup terminal
-│   ├── ChatInterface.tsx          # Multi-turn RAG chat
-│   ├── DocumentPanel.tsx          # File upload & management
-│   ├── Markdown.tsx               # Markdown renderer
-│   └── StudyWorkspace.tsx         # Notes/Q&A/Flashcards/Exam tabs
-└── lib/
-    ├── chunker.ts                 # Text chunking with overlap
-    ├── embeddings.ts              # Gemini embedding generation
-    ├── firebase.ts                # Firebase client SDK
-    ├── firebase-admin.ts          # Firebase Admin (auth verification)
-    ├── gemini.ts                  # Gemini chat generation
-    ├── indexed-db-store.ts        # IndexedDB for local mode
-    ├── local-ai.ts                # Chrome Gemini Nano integration
-    ├── local-parser.ts            # Client-side PDF.js + Tesseract OCR
-    ├── ocr.ts                     # Server-side Gemini Vision OCR
-    ├── pdf-extractor.ts           # Server-side PDF text extraction
-    ├── rag-pipeline.ts            # Full ingestion & retrieval pipeline
-    ├── study-generator.ts         # Study kit generation orchestrator
-    └── vector-store.ts            # Firestore vector store + search
-```
+---
 
 ## License
 
-Private project. All rights reserved.
+This project is licensed under the terms of the [MIT License](LICENSE).
