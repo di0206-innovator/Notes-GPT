@@ -3,7 +3,7 @@ import { BookOpen, Layers, HelpCircle, FileSignature, Terminal } from 'lucide-re
 
 export default function Home() {
   return (
-    <div className="min-h-screen bg-black text-white font-mono relative overflow-hidden flex flex-col justify-between">
+    <div className="min-h-screen bg-black text-white font-mono relative overflow-hidden flex flex-col justify-between crt-power">
       {/* CRT scanline overlay */}
       <div className="crt-overlay" />
 
@@ -33,7 +33,7 @@ export default function Home() {
         </div>
 
         {/* Big Brutalist Monospace Header */}
-        <h1 className="text-3xl md:text-5xl lg:text-6xl font-black uppercase tracking-tight text-white mb-6 leading-tight max-w-4xl">
+        <h1 className="text-3xl md:text-5xl lg:text-6xl font-black uppercase tracking-tight text-white mb-6 leading-tight max-w-4xl glitch-hover select-none cursor-default">
           COMPILE TEXTBOOKS & NOTES.<br />
           ACE YOUR EXAMS.
         </h1>
@@ -62,7 +62,7 @@ export default function Home() {
         {/* Feature Grid */}
         <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mt-20 w-full">
           {/* Notes Card */}
-          <div className="border-2 border-white bg-black p-6 text-left group hover:bg-white hover:text-black transition-colors">
+          <div className="border-2 border-white bg-black p-6 text-left group hover:bg-white hover:text-black transition-all reveal-card reveal-card-delay-1 brutalist-pop">
             <div className="w-8 h-8 border border-white group-hover:border-black flex items-center justify-center mb-6">
               <BookOpen className="w-4.5 h-4.5" />
             </div>
@@ -73,7 +73,7 @@ export default function Home() {
           </div>
 
           {/* Flashcards Card */}
-          <div className="border-2 border-white bg-black p-6 text-left group hover:bg-white hover:text-black transition-colors">
+          <div className="border-2 border-white bg-black p-6 text-left group hover:bg-white hover:text-black transition-all reveal-card reveal-card-delay-2 brutalist-pop">
             <div className="w-8 h-8 border border-white group-hover:border-black flex items-center justify-center mb-6">
               <Layers className="w-4.5 h-4.5" />
             </div>
@@ -84,7 +84,7 @@ export default function Home() {
           </div>
 
           {/* Questions Card */}
-          <div className="border-2 border-white bg-black p-6 text-left group hover:bg-white hover:text-black transition-colors">
+          <div className="border-2 border-white bg-black p-6 text-left group hover:bg-white hover:text-black transition-all reveal-card reveal-card-delay-3 brutalist-pop">
             <div className="w-8 h-8 border border-white group-hover:border-black flex items-center justify-center mb-6">
               <HelpCircle className="w-4.5 h-4.5" />
             </div>
@@ -95,7 +95,7 @@ export default function Home() {
           </div>
 
           {/* Exam Simulator Card */}
-          <div className="border-2 border-white bg-black p-6 text-left group hover:bg-white hover:text-black transition-colors">
+          <div className="border-2 border-white bg-black p-6 text-left group hover:bg-white hover:text-black transition-all reveal-card reveal-card-delay-4 brutalist-pop">
             <div className="w-8 h-8 border border-white group-hover:border-black flex items-center justify-center mb-6">
               <FileSignature className="w-4.5 h-4.5" />
             </div>
@@ -109,8 +109,11 @@ export default function Home() {
 
       {/* Footer */}
       <footer className="relative z-10 border-t-2 border-white py-8 px-8 bg-black">
-        <div className="max-w-7xl mx-auto flex flex-col md:flex-row justify-between items-center text-white/50 text-[10px] uppercase gap-4 md:gap-0">
-          <p>© 2026 CampusStudyGPT. SECURE INTERNAL SYSTEM HOSTED LOCALLY.</p>
+        <div className="max-w-7xl mx-auto flex flex-col md:flex-row justify-between items-center text-white/50 text-[10px] uppercase gap-4 md:gap-0 font-mono">
+          <div className="flex flex-col gap-1.5">
+            <p>© 2026 CampusStudyGPT. SECURE INTERNAL SYSTEM HOSTED LOCALLY.</p>
+            <p className="text-white font-bold tracking-wider">[ PROJECT BY DIVYANSHU SINHA ]</p>
+          </div>
           <div className="flex space-x-6">
             <a href="#" className="hover:text-white underline">PRIVACY</a>
             <a href="#" className="hover:text-white underline">TERMS</a>
