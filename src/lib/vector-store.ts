@@ -60,18 +60,22 @@ export async function addDocumentChunks(
     type: documentMeta.type || 'pdf',
   });
 
-  // 2. Save chunks in batches (Firestore supports batches up to 500 documents)
-  const batch = db.batch();
-  chunks.forEach((chunk, i) => {
-    const chunkId = `${sessionId}_${documentMeta.documentId}_${i}`;
-    const chunkRef = db.collection('chunks').doc(chunkId);
-    batch.set(chunkRef, {
-      ...chunk,
-      sessionId,
+  // 2. Save chunks in batches of 500 (Firestore supports batches up to 500 documents)
+  const BATCH_LIMIT = 500;
+  for (let i = 0; i < chunks.length; i += BATCH_LIMIT) {
+    const chunkBatch = chunks.slice(i, i + BATCH_LIMIT);
+    const batch = db.batch();
+    chunkBatch.forEach((chunk, index) => {
+      const globalIndex = i + index;
+      const chunkId = `${sessionId}_${documentMeta.documentId}_${globalIndex}`;
+      const chunkRef = db.collection('chunks').doc(chunkId);
+      batch.set(chunkRef, {
+        ...chunk,
+        sessionId,
+      });
     });
-  });
-
-  await batch.commit();
+    await batch.commit();
+  }
 }
 
 /**
@@ -83,14 +87,23 @@ export async function search(
   sessionId: string,
   topK: number = 5
 ): Promise<(StoredChunk & { score: number })[]> {
-  // Query all chunks for this session
+  // Query metadata and embedding only, excluding the heavy content text field
   const chunksSnapshot = await db.collection('chunks')
     .where('sessionId', '==', sessionId)
+    .select('documentId', 'chunkIndex', 'pageNumber', 'filename', 'embedding')
     .get();
 
-  const chunks: StoredChunk[] = [];
+  const chunks: (Omit<StoredChunk, 'content'> & { id: string })[] = [];
   chunksSnapshot.forEach((docSnap) => {
-    chunks.push(docSnap.data() as StoredChunk);
+    const data = docSnap.data();
+    chunks.push({
+      id: docSnap.id,
+      documentId: data.documentId || '',
+      chunkIndex: data.chunkIndex ?? 0,
+      pageNumber: data.pageNumber ?? 1,
+      filename: data.filename || '',
+      embedding: data.embedding || [],
+    });
   });
 
   if (chunks.length === 0) {
@@ -104,7 +117,22 @@ export async function search(
   }));
 
   scored.sort((a, b) => b.score - a.score);
-  return scored.slice(0, topK);
+  const topChunks = scored.slice(0, topK);
+
+  // Retrieve the full text content only for the top K selected chunks
+  const results = await Promise.all(
+    topChunks.map(async (chunk) => {
+      const docRef = db.collection('chunks').doc(chunk.id);
+      const docSnap = await docRef.get();
+      const fullData = docSnap.data() as StoredChunk;
+      return {
+        ...fullData,
+        score: chunk.score,
+      };
+    })
+  );
+
+  return results;
 }
 
 /**
@@ -163,18 +191,22 @@ export async function deleteDocument(documentId: string, sessionId: string): Pro
   }
   await docRef.delete();
 
-  // 2. Query and delete chunks in batches
+  // 2. Query and delete chunks in batches of 500 (Firestore limit)
   const chunksSnapshot = await db.collection('chunks')
     .where('sessionId', '==', sessionId)
     .where('documentId', '==', documentId)
     .get();
 
-  const batch = db.batch();
-  chunksSnapshot.forEach((docSnap) => {
-    batch.delete(docSnap.ref);
-  });
-
-  await batch.commit();
+  const BATCH_LIMIT = 500;
+  const docs = chunksSnapshot.docs;
+  for (let i = 0; i < docs.length; i += BATCH_LIMIT) {
+    const docBatch = docs.slice(i, i + BATCH_LIMIT);
+    const batch = db.batch();
+    docBatch.forEach((doc) => {
+      batch.delete(doc.ref);
+    });
+    await batch.commit();
+  }
   return true;
 }
 

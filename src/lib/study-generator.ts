@@ -72,113 +72,61 @@ function extractOCRUncertainties(chunks: StoredChunk[]): UncertainSection[] {
 }
 
 /**
- * Generate study notes from the uploaded documents.
+ * Generate all study assets in a single optimized Gemini API call.
  */
-async function generateRevisionNotes(context: string): Promise<string> {
-  const prompt = `You are an expert tutor. Your task is to generate comprehensive, highly structured, and easy-to-read Revision Notes based ONLY on the provided document excerpts.
-Format requirements:
-- Organize notes topic-wise or chapter-wise.
-- Use clean Markdown formatting, including bullet points, bold text for key terms, and code blocks for code.
-- Format all math formulas in LaTeX style enclosed in double dollar signs (e.g. $$E=mc^2$$).
-- Include core concepts, definitions, explanations, formulas, and examples.
-- Highlight important concepts in blockquotes.
-- Base everything strictly on the text. Do not invent any outside facts or details.
-- Cite sources inline when introducing key topics, e.g. (Source: filename, p.X).
+async function generateAllStudyAssets(context: string): Promise<Omit<StudyKit, 'updatedAt' | 'uncertainSections'>> {
+  const prompt = `You are an expert tutor, exam examiner, and university final exam writer. Your task is to generate a comprehensive Study Kit based ONLY on the provided document excerpts.
+You must return the output STRICTLY as a single JSON object. Do not include any introductory remarks, conversation, or markdown wrapping blocks outside the JSON (e.g. return ONLY the JSON payload).
 
-Source Document Excerpts:
-${context}`;
-
-  return generateChatResponse([{ role: 'user', content: prompt }]);
-}
-
-/**
- * Generate question bank (MCQs, short and long Q&A).
- */
-async function generateQuestionBank(context: string): Promise<string> {
-  const prompt = `You are an exam examiner. Generate a comprehensive Question Bank based ONLY on the provided study materials.
-Structure the response in three clear sections:
-1. **Multiple Choice Questions (MCQs):** Provide 5-8 MCQs. Each question must have options (A, B, C, D) and indicate the correct answer with an explanation.
-2. **Short Answer Questions:** Provide 5 questions focusing on definitions, formulas, or quick explanations, with complete answers.
-3. **Long/Analytical Questions:** Provide 3 detailed questions requiring deep explanations, steps, proofs, or examples, with detailed model answers.
-
-Ensure:
-- Math formulas are formatted in LaTeX ($$...$$).
-- Answers are strictly derived from the text.
-- Do not invent outside facts.
-
-Source Document Excerpts:
-${context}`;
-
-  return generateChatResponse([{ role: 'user', content: prompt }]);
-}
-
-/**
- * Generate interactive flashcards.
- */
-async function generateFlashcards(context: string): Promise<Flashcard[]> {
-  const prompt = `You are a study helper. Generate a set of 12-18 study flashcards based ONLY on the provided context.
-Output must be a valid JSON array of objects. Do not wrap it in markdown code fences or write any explanation.
-Each object in the array must strictly match this schema:
+The JSON object must match this schema:
 {
-  "id": "string (unique code, e.g., fc-1, fc-2)",
-  "front": "string (the question, term, formula, or concept to remember)",
-  "back": "string (the short definition, explanation, answer, or equation)",
-  "category": "string (the topic or chapter name)"
+  "revisionNotes": "string (Markdown format, containing comprehensive, highly structured revision notes divided topic-wise)",
+  "questionBank": "string (Markdown format, containing 5-8 MCQs with options and answers, 5 short Q&As, and 3 long/analytical Q&As)",
+  "flashcards": [
+    {
+      "id": "string (unique code, e.g., fc-1, fc-2)",
+      "front": "string (question or concept to remember)",
+      "back": "string (short definition or answer)",
+      "category": "string (topic name)"
+    }
+  ],
+  "mockExam": "string (Markdown format, containing a realistic practice exam paper with marks, duration, and instructions)",
+  "answerKey": "string (Markdown format, containing the comprehensive answer key and grading rubric for the mock exam)"
 }
 
-Ensure all flashcards represent high-yield exam concepts and formulas from the notes. Keep math in LaTeX style.
+Formatting and Grounding Rules:
+1. Grounding: All content, questions, notes, and answers must be strictly derived from the provided excerpts. Do not invent any outside facts, assumptions, or details.
+2. Math/Latex: Format all mathematical equations, formulas, and symbols in LaTeX style enclosed in double dollar signs (e.g. $$E=mc^2$$ or $$\\int_0^\\infty e^{-x^2} dx$$).
+3. Notes: In "revisionNotes", organize topic-wise, use clean markdown, bold key terms, use blockquotes for important concepts, and cite sources inline (e.g. (Source: filename, p.X)).
+4. Question Bank: In "questionBank", structure into three sections (1. MCQs, 2. Short Answer, 3. Long/Analytical). Make sure to explain the correct answers for MCQs.
+5. Flashcards: Generate 12-18 flashcards representing high-yield concepts and formulas.
+6. Mock Exam & Answer Key: Separate the exam paper questions ("mockExam") and the answer key/rubric ("answerKey") into the respective fields.
 
-Source Document Excerpts:
+Source Excerpts:
 ${context}`;
 
-  const content = await generateChatResponse([{ role: 'user', content: prompt }]);
+  const content = await generateChatResponse([{ role: 'user', content: prompt }], 0.2);
   const trimmed = content.trim();
   try {
-    // Strip markdown JSON wrappers if present
-    const jsonStr = trimmed.replace(/^```json/, '').replace(/```$/, '').trim();
-    return JSON.parse(jsonStr) as Flashcard[];
-  } catch {
-    console.error('Failed to parse flashcards JSON:', trimmed);
-    return [];
+    const start = trimmed.indexOf('{');
+    const end = trimmed.lastIndexOf('}');
+    if (start === -1 || end === -1 || start >= end) {
+      throw new Error('No valid JSON object structure found in LLM response.');
+    }
+    const jsonStr = trimmed.substring(start, end + 1);
+    const result = JSON.parse(jsonStr);
+    return {
+      revisionNotes: result.revisionNotes || 'No notes generated.',
+      questionBank: result.questionBank || 'No questions generated.',
+      flashcards: Array.isArray(result.flashcards) ? result.flashcards : [],
+      mockExam: result.mockExam || 'No exam paper generated.',
+      answerKey: result.answerKey || 'No answer key generated.',
+    };
+  } catch (error) {
+    console.error('Failed to parse combined study kit JSON:', trimmed, error);
+    throw new Error('Failed to parse generated study materials JSON. Please try again.');
   }
 }
-
-/**
- * Generate mock exam paper and answer key.
- */
-async function generateMockExam(context: string): Promise<{ exam: string; key: string }> {
-  const prompt = `You are a university professor. Generate a realistic, formal Exam Paper and a corresponding Answer Key based ONLY on the provided material.
-The paper should have total marks (e.g. 100 marks), duration (e.g. 3 hours), and instructions.
-Format the output into two sections separated by a unique delimiter "===ANSWER_KEY_START===".
-
-Example structure of output:
-# University Final Practice Exam: [Topic Name]
-**Duration:** 3 Hours  
-**Total Marks:** 100 Marks  
-**Instructions:** Answer all questions...
-[Exams questions here...]
-
-===ANSWER_KEY_START===
-# Practice Exam - Comprehensive Answer Key & Grading Rubric
-[Answers and marking instructions here...]
-
-Ensure:
-- Questions cover all core sections: Section A (MCQs/True-False), Section B (Short Definitions/Calculations), Section C (Long Essays/Problems).
-- Keep math in LaTeX ($$...$$).
-- Answers must be 100% grounded in the source text.
-
-Source Document Excerpts:
-${context}`;
-
-  const content = await generateChatResponse([{ role: 'user', content: prompt }]);
-  const parts = content.split('===ANSWER_KEY_START===');
-  
-  return {
-    exam: parts[0]?.trim() || 'Failed to generate exam paper.',
-    key: parts[1]?.trim() || 'No answer key generated.'
-  };
-}
-
 
 /**
  * Main Orchestrator: Generate the full Study Kit.
@@ -196,28 +144,11 @@ export async function generateStudyKit(sessionId: string): Promise<StudyKit> {
 
   console.log(`[StudyKit] Generating study materials using ${chunks.length} chunks...`);
 
-  // 3. Generate all assets sequentially with a small delay to respect free-tier rate limits
-  console.log('[StudyKit] Generating revision notes...');
-  const notes = await generateRevisionNotes(contextText);
-  
-  await new Promise((resolve) => setTimeout(resolve, 12000));
-  console.log('[StudyKit] Generating question bank...');
-  const qna = await generateQuestionBank(contextText);
-  
-  await new Promise((resolve) => setTimeout(resolve, 12000));
-  console.log('[StudyKit] Generating flashcards...');
-  const flashcards = await generateFlashcards(contextText);
-  
-  await new Promise((resolve) => setTimeout(resolve, 12000));
-  console.log('[StudyKit] Generating mock exam...');
-  const examData = await generateMockExam(contextText);
+  // 3. Generate all assets in a single API call
+  const assets = await generateAllStudyAssets(contextText);
 
   return {
-    revisionNotes: notes,
-    questionBank: qna,
-    flashcards,
-    mockExam: examData.exam,
-    answerKey: examData.key,
+    ...assets,
     uncertainSections: ocrUncertainties,
     updatedAt: new Date().toISOString(),
   };

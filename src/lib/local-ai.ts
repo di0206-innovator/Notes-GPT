@@ -286,19 +286,24 @@ export async function generateLocalResponse(
   let session: AISession | undefined;
 
   try {
+    // For local window.ai/assistant, evaluate system prompt context as part of the user query
+    // to prevent extremely slow session creation times.
+    const cleanSystemPrompt = "You are a precise and grounded study assistant for CampusStudyGPT.";
+    const combinedUserPrompt = `${systemPrompt}\n\nUSER QUESTION:\n${userPrompt}`;
+
     if (win.ai && win.ai.languageModel) {
       session = await win.ai.languageModel.create({
-        systemPrompt: systemPrompt,
+        systemPrompt: cleanSystemPrompt,
         temperature: temperature ?? settings.temperature ?? 0.2,
       });
     } else if (win.ai && win.ai.assistant) {
       session = await win.ai.assistant.create({
-        systemPrompt: systemPrompt,
+        systemPrompt: cleanSystemPrompt,
         temperature: temperature ?? settings.temperature ?? 0.2,
       });
     } else if (win.assistant) {
       session = await win.assistant.create({
-        systemPrompt: systemPrompt,
+        systemPrompt: cleanSystemPrompt,
         temperature: temperature ?? settings.temperature ?? 0.2,
       });
     }
@@ -308,7 +313,7 @@ export async function generateLocalResponse(
     }
 
     onProgress?.('Generating response via Gemini Nano...');
-    const response = await session.prompt(userPrompt);
+    const response = await session.prompt(combinedUserPrompt);
     return response || '';
   } catch (error) {
     console.error('Local window.ai prompt failed:', error);
@@ -366,78 +371,73 @@ export async function generateLocalStudyKit(
     }
   });
 
-  // 1. Generate Revision Notes
-  onProgress?.('Generating local Revision Notes...');
-  const notesPrompt = `Generate structured topic-wise revision notes based ONLY on the provided context. Use LaTeX $$ math formulas. Cite filenames.
-Context:
+  // Consolidated generation call
+  onProgress?.('Running combined Local AI study kit compiler...');
+  const prompt = `You are an expert tutor. Generate a complete study kit based ONLY on the provided context.
+You must output all sections in a single response, separated by the exact delimiters as shown below. Do not add any conversational text.
+
+Use the following template strictly:
+
+===REVISION_NOTES===
+[Structured topic-wise revision notes here, using LaTeX $$ for math formulas. Cite filenames.]
+
+===QUESTION_BANK===
+[MCQs, short answer, and long answer questions here. Cite filenames.]
+
+===FLASHCARDS===
+[Flashcards in JSON format: A raw JSON array containing 5-8 flashcard objects matching this exact format:
+[{"id": "fc-l1", "front": "question?", "back": "answer", "category": "topic"}]
+Do not wrap it in markdown block fences, just print raw JSON array.]
+
+===MOCK_EXAM===
+[Mock exam paper questions here (total 50 marks, 1.5 hours).]
+
+===ANSWER_KEY===
+[Answers and marking instructions here.]
+
+===END===
+
+Here is the context:
 ${contextText}`;
-  const revisionNotes = await generateLocalResponse(
-    'You are an expert tutor. Provide concise, clear, and structured revision notes.',
-    notesPrompt,
+
+  const response = await generateLocalResponse(
+    'You are an expert tutor. Output all study kit sections separated by the specified delimiters.',
+    prompt,
     settings.temperature,
     settings,
     onProgress
   );
 
-  // 2. Generate Q&A Bank
-  onProgress?.('Compiling local Practice Q&As...');
-  const qnaPrompt = `Create a Question Bank based ONLY on this context:
-1. 3 Multiple Choice Questions (MCQs) with options A, B, C, D and correct answers.
-2. 3 Short Answer questions with answers.
-3. 2 Long Analytical questions with answers.
-Context:
-${contextText}`;
-  const questionBank = await generateLocalResponse(
-    'You are an examiner. Generate a clean MCQ, short, and long question bank.',
-    qnaPrompt,
-    settings.temperature,
-    settings,
-    onProgress
-  );
+  // Parse sections using delimiters
+  onProgress?.('Parsing local study materials...');
+  const getSection = (name: string, nextName: string): string => {
+    const startIdx = response.indexOf(`===${name}===`);
+    if (startIdx === -1) return '';
+    const contentStart = startIdx + `===${name}===`.length;
+    const endIdx = response.indexOf(`===${nextName}===`, contentStart);
+    if (endIdx === -1) {
+      return response.substring(contentStart).trim();
+    }
+    return response.substring(contentStart, endIdx).trim();
+  };
 
-  // 3. Generate Flashcards (mock JSON array of 5-8 cards)
-  onProgress?.('Formatting local Memory Flashcards...');
-  const fcPrompt = `Create a list of 5-8 flashcard JSON objects based on the context.
-Strictly return a raw JSON array of objects without markdown wrappers:
-[{"id": "fc-1", "front": "question?", "back": "answer", "category": "topic"}]
-Context:
-${contextText}`;
-  const fcResponse = await generateLocalResponse(
-    'You are a study card generator. Return ONLY a valid JSON array of flashcards.',
-    fcPrompt,
-    settings.temperature,
-    settings,
-    onProgress
-  );
-  
+  const revisionNotes = getSection('REVISION_NOTES', 'QUESTION_BANK') || 'No notes generated.';
+  const questionBank = getSection('QUESTION_BANK', 'FLASHCARDS') || 'No questions generated.';
+  const flashcardsRaw = getSection('FLASHCARDS', 'MOCK_EXAM');
+  const mockExam = getSection('MOCK_EXAM', 'ANSWER_KEY') || 'No mock exam generated.';
+  const answerKey = getSection('ANSWER_KEY', 'END') || 'No answer key generated.';
+
   let flashcards: Record<string, unknown>[] = [];
   try {
-    const jsonStr = fcResponse.replace(/^```json/, '').replace(/```$/, '').trim();
-    flashcards = JSON.parse(jsonStr) as Record<string, unknown>[];
+    const jsonStr = flashcardsRaw.replace(/^```json/, '').replace(/```$/, '').trim();
+    flashcards = JSON.parse(jsonStr);
   } catch {
-    // Fallback manual parsing or simple generation if local model output fails JSON parsing
+    // Fallback: parse or generate simple flashcards
     flashcards = [
-      { id: 'fc-l1', front: 'Define the main topic', back: 'Refer to revision notes tab.', category: 'Notes' },
-      { id: 'fc-l2', front: 'Explain key formula', back: 'Refer to equations in notes.', category: 'Formulas' }
+      { id: 'fc-l1', front: 'Review your revision notes', back: 'Refer to the revision notes tab.', category: 'Notes' },
+      { id: 'fc-l2', front: 'Practice the exam questions', back: 'Refer to the mock exam tab.', category: 'Practice' }
     ];
   }
-
-  // 4. Generate Mock Exam
-  onProgress?.('Drafting local Mock Exam paper...');
-  const examPrompt = `Generate a realistic exam paper (total 50 marks, 1.5 hours) and an answer key separated by unique delimiter "===ANSWER_KEY_START===".
-Context:
-${contextText}`;
-  const examResponse = await generateLocalResponse(
-    'You are a professor. Create an exam paper and answer key separated by ===ANSWER_KEY_START===.',
-    examPrompt,
-    settings.temperature,
-    settings,
-    onProgress
-  );
-
-  const parts = examResponse.split('===ANSWER_KEY_START===');
-  const mockExam = parts[0]?.trim() || 'Failed to generate mock exam.';
-  const answerKey = parts[1]?.trim() || 'Answer key not found.';
 
   const studyKit: Record<string, unknown> = {
     revisionNotes,

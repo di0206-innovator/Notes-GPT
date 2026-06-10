@@ -31,6 +31,9 @@ export default function SettingsModal({
 }: SettingsModalProps) {
   const [testStatus, setTestStatus] = useState<{ type: 'success' | 'error' | null; message: string }>({ type: null, message: '' });
   const [isTesting, setIsTesting] = useState(false);
+  const [localOllamaUrl, setLocalOllamaUrl] = useState(settings.ollamaUrl);
+  const [localOllamaModel, setLocalOllamaModel] = useState(settings.ollamaModel);
+  const [showWipeConfirm, setShowWipeConfirm] = useState(false);
 
   if (!isOpen) return null;
 
@@ -55,11 +58,11 @@ export default function SettingsModal({
   };
 
   const handleOllamaUrlChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    onUpdateSettings({ ...settings, ollamaUrl: e.target.value });
+    setLocalOllamaUrl(e.target.value);
   };
 
   const handleOllamaModelChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    onUpdateSettings({ ...settings, ollamaModel: e.target.value });
+    setLocalOllamaModel(e.target.value);
   };
 
   const handleWebLlmModelChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
@@ -75,8 +78,8 @@ export default function SettingsModal({
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           action: 'check',
-          url: settings.ollamaUrl,
-          model: settings.ollamaModel,
+          url: localOllamaUrl,
+          model: localOllamaModel,
         }),
       });
       
@@ -87,6 +90,12 @@ export default function SettingsModal({
 
       if (data.available && data.hasModel) {
         setTestStatus({ type: 'success', message: data.message });
+        // Auto-save on successful test
+        onUpdateSettings({
+          ...settings,
+          ollamaUrl: localOllamaUrl,
+          ollamaModel: localOllamaModel,
+        });
       } else {
         setTestStatus({ type: 'error', message: data.message || 'Model missing or offline.' });
       }
@@ -99,16 +108,7 @@ export default function SettingsModal({
   };
 
   const handleResetStorage = async () => {
-    if (confirm('CRITICAL WARNING: This will permanently wipe all uploaded files, indexed vector chunks, and generated study kits from your local browser database. Continue?')) {
-      try {
-        await clearLocalStore();
-        alert('Local store cleared successfully. The page will reload now.');
-        window.location.reload();
-      } catch (err) {
-        console.error('Reset store failed:', err);
-        alert('Reset store failed: ' + (err as Error).message);
-      }
-    }
+    setShowWipeConfirm(true);
   };
 
   return (
@@ -245,7 +245,7 @@ export default function SettingsModal({
                 <label className="text-[8px] text-white/70 uppercase">Ollama Server Endpoint</label>
                 <input
                   type="text"
-                  value={settings.ollamaUrl}
+                  value={localOllamaUrl}
                   onChange={handleOllamaUrlChange}
                   className="bg-black border border-white p-1.5 text-xs text-white outline-none focus:border-white/80 font-mono"
                   placeholder="e.g. http://localhost:11434"
@@ -255,15 +255,15 @@ export default function SettingsModal({
                 <label className="text-[8px] text-white/70 uppercase">Ollama Model Name</label>
                 <input
                   type="text"
-                  value={settings.ollamaModel}
+                  value={localOllamaModel}
                   onChange={handleOllamaModelChange}
                   className="bg-black border border-white p-1.5 text-xs text-white outline-none focus:border-white/80 font-mono"
                   placeholder="e.g. gemma2:2b"
                 />
               </div>
 
-              {/* Connection Tester */}
-              <div className="pt-2">
+              {/* Connection Tester & Apply */}
+              <div className="pt-2 flex items-center gap-2">
                 <button
                   type="button"
                   onClick={handleTestOllama}
@@ -273,14 +273,28 @@ export default function SettingsModal({
                   <Activity className={`w-3 h-3 ${isTesting ? 'animate-spin' : ''}`} />
                   <span>{isTesting ? 'TESTING...' : 'TEST CONNECTION'}</span>
                 </button>
-                {testStatus.message && (
-                  <span className={`text-[8px] block mt-2 leading-normal uppercase font-bold ${
-                    testStatus.type === 'success' ? 'text-green-400' : 'text-red-400'
-                  }`}>
-                    &gt; {testStatus.message}
-                  </span>
-                )}
+                <button
+                  type="button"
+                  onClick={() => {
+                    onUpdateSettings({
+                      ...settings,
+                      ollamaUrl: localOllamaUrl,
+                      ollamaModel: localOllamaModel,
+                    });
+                    setTestStatus({ type: 'success', message: 'Settings applied successfully!' });
+                  }}
+                  className="retro-button flex items-center justify-center gap-1.5 px-3 py-1.5 text-[9px] cursor-pointer font-bold bg-white text-black uppercase"
+                >
+                  <span>APPLY CHANGES</span>
+                </button>
               </div>
+              {testStatus.message && (
+                <span className={`text-[8px] block mt-1 leading-normal uppercase font-bold ${
+                  testStatus.type === 'success' ? 'text-green-400' : 'text-red-400'
+                }`}>
+                  &gt; {testStatus.message}
+                </span>
+              )}
             </div>
           )}
 
@@ -387,6 +401,47 @@ export default function SettingsModal({
             Settings are stored in the client&apos;s localStorage and loaded dynamically on each workspace session initialize.
           </div>
         </div>
+        {/* Custom Confirmation Dialog for Wiping DB */}
+        {showWipeConfirm && (
+          <div className="absolute inset-0 bg-black/95 z-50 flex flex-col items-center justify-center p-6 border-2 border-white">
+            <div className="border border-white p-6 max-w-sm w-full bg-black text-center flex flex-col gap-4 retro-shadow-black">
+              <span className="text-xs font-bold text-white uppercase tracking-widest block">
+                [ ⚠️ CRITICAL WARNING ⚠️ ]
+              </span>
+              <p className="text-[10px] text-white/80 leading-normal uppercase">
+                THIS WILL PERMANENTLY WIPE ALL UPLOADED FILES, VECTOR CHUNKS, AND GENERATED STUDY MATERIALS FROM YOUR LOCAL BROWSER DATABASE. THIS CANNOT BE UNDONE.
+              </p>
+              <div className="grid grid-cols-2 gap-3 pt-2">
+                <button
+                  type="button"
+                  onClick={async () => {
+                    try {
+                      await clearLocalStore();
+                      setShowWipeConfirm(false);
+                      onClose();
+                      alert('Local store cleared successfully. The page will reload now.');
+                      window.location.reload();
+                    } catch (err) {
+                      console.error('Reset store failed:', err);
+                      alert('Reset store failed: ' + (err as Error).message);
+                      setShowWipeConfirm(false);
+                    }
+                  }}
+                  className="retro-button text-xs py-2 bg-red-600 border-red-600 hover:bg-red-700 text-white font-bold"
+                >
+                  PROCEED
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setShowWipeConfirm(false)}
+                  className="retro-button text-xs py-2"
+                >
+                  CANCEL
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
       </motion.div>
     </div>
   );

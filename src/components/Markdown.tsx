@@ -13,11 +13,22 @@ export function Markdown({ content }: { content: string }) {
         h1: ({ children }) => <h1 className="text-lg font-bold mb-3 uppercase tracking-wider border-b border-white/30 pb-1">{children}</h1>,
         h2: ({ children }) => <h2 className="text-md font-bold mb-2 uppercase tracking-wide">{children}</h2>,
         h3: ({ children }) => <h3 className="text-sm font-bold mb-2 uppercase">{children}</h3>,
-        code: ({ children }) => (
-          <code className="bg-white text-black border border-white px-1 py-0.5 font-mono text-[11px] font-bold">
-            {children}
-          </code>
-        ),
+        code: ({ className, children, ...props }: { className?: string; children?: React.ReactNode }) => {
+          const match = /language-(\w+)/.exec(className || '');
+          const isInline = !match;
+          if (isInline) {
+            return (
+              <code className="bg-white text-black border border-white px-1 py-0.5 font-mono text-[11px] font-bold" {...props}>
+                {children}
+              </code>
+            );
+          }
+          return (
+            <code className="text-white bg-transparent font-mono text-xs block" {...props}>
+              {children}
+            </code>
+          );
+        },
         pre: ({ children }) => (
           <pre className="bg-black p-4 overflow-x-auto mb-3 font-mono text-xs border-2 border-white retro-shadow-black">
             {children}

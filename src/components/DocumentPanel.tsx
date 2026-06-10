@@ -99,9 +99,16 @@ export default function DocumentPanel({
     setUploadStatus(null);
     setUploadStage('Processing file...');
 
-    const isPDF = file.type === 'application/pdf' || file.name.toLowerCase().endsWith('.pdf');
+    const filenameLower = file.name.toLowerCase();
+    const isPDF = file.type === 'application/pdf' || filenameLower.endsWith('.pdf');
+    const isImage = file.type.startsWith('image/') || 
+                    /\.(png|jpe?g|webp)$/i.test(filenameLower);
 
     try {
+      if (!isPDF && !isImage) {
+        throw new Error('Only PDF and image files (PNG, JPEG, WEBP) are supported.');
+      }
+
       if (mode === 'local') {
         let text = '';
         let pageTexts: string[] = [];

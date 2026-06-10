@@ -44,6 +44,7 @@ export default function ChatInterface({
   const [isLoading, setIsLoading] = useState(false);
   const [progressMessage, setProgressMessage] = useState('');
   const messagesEndRef = useRef<HTMLDivElement>(null);
+  const abortControllerRef = useRef<AbortController | null>(null);
 
   const scrollToBottom = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
@@ -116,6 +117,9 @@ ${contextText || 'No local document context available.'}
           { role: 'assistant', content: reply },
         ]);
       } else {
+        const controller = new AbortController();
+        abortControllerRef.current = controller;
+
         const idToken = await auth.currentUser?.getIdToken();
         const response = await fetch('/api/chat', {
           method: 'POST',
@@ -123,6 +127,7 @@ ${contextText || 'No local document context available.'}
             'Content-Type': 'application/json',
             'Authorization': `Bearer ${idToken}`,
           },
+          signal: controller.signal,
           body: JSON.stringify({ messages: newMessages, temperature, topK }),
         });
 
@@ -134,6 +139,10 @@ ${contextText || 'No local document context available.'}
         setMessages((prev) => [...prev, data]);
       }
     } catch (error) {
+      if (error instanceof Error && error.name === 'AbortError') {
+        console.log('Fetch request aborted by user.');
+        return;
+      }
       console.error('Error sending message:', error);
       
       const isLocalError = mode === 'local';
@@ -181,7 +190,21 @@ ${contextText || 'No local document context available.'}
     } finally {
       setIsLoading(false);
       setProgressMessage('');
+      abortControllerRef.current = null;
     }
+  };
+
+  const handleInterrupt = () => {
+    if (abortControllerRef.current) {
+      abortControllerRef.current.abort();
+      abortControllerRef.current = null;
+    }
+    setIsLoading(false);
+    setProgressMessage('');
+    setMessages((prev) => [
+      ...prev,
+      { role: 'assistant', content: '⚠️ *Inference task terminated by user. Workspace reset.*' }
+    ]);
   };
 
   const handleSubmit = (e: React.FormEvent) => {
@@ -200,9 +223,28 @@ ${contextText || 'No local document context available.'}
             [ REMOTE_STUDY_SHELL ]
           </h2>
         </div>
-        <span className="text-[10px] uppercase font-mono text-white/50">
-          Mode: {mode.toUpperCase()} {mode === 'local' && `(${settings?.localProvider || 'window-ai'})`}
-        </span>
+        <div className="flex items-center gap-3">
+          <button
+            type="button"
+            onClick={() => {
+              if (confirm('Wipe chat history and reset session?')) {
+                setMessages([
+                  {
+                    role: 'assistant',
+                    content: 'Hello! I am your AI Study Assistant. I can help you revise, explain specific concepts, generate practice quizzes, or predict exam questions based **strictly** on your uploaded materials. Ask me anything!',
+                  }
+                ]);
+              }
+            }}
+            className="retro-button py-0.5 px-2 text-[9px] font-bold"
+            title="Clear Chat History"
+          >
+            CLEAR
+          </button>
+          <span className="text-[10px] uppercase font-mono text-white/50">
+            Mode: {mode.toUpperCase()} {mode === 'local' && `(${settings?.localProvider || 'window-ai'})`}
+          </span>
+        </div>
       </div>
 
       {/* Message History Area */}
@@ -241,12 +283,21 @@ ${contextText || 'No local document context available.'}
         })}
 
         {isLoading && (
-          <div className="flex gap-4 justify-start">
+          <div className="flex gap-4 justify-start items-start">
             <div className="w-8 h-8 border border-white bg-black flex items-center justify-center text-white flex-shrink-0 mt-1 animate-pulse">
               <Terminal className="w-4 h-4" />
             </div>
-            <div className="bg-black text-white border-2 border-white p-4 font-mono text-xs animate-flash">
-              {progressMessage ? `[ ${progressMessage.toUpperCase()} ]` : '[ ACCESSING COMPREHENSION DIRECTORY... ]'}
+            <div className="flex flex-col gap-2">
+              <div className="bg-black text-white border-2 border-white p-4 font-mono text-xs animate-flash">
+                {progressMessage ? `[ ${progressMessage.toUpperCase()} ]` : '[ ACCESSING COMPREHENSION DIRECTORY... ]'}
+              </div>
+              <button
+                type="button"
+                onClick={handleInterrupt}
+                className="retro-button py-1 px-3 text-[9px] font-bold self-start bg-red-600 border-red-600 text-white hover:bg-red-700"
+              >
+                INTERRUPT GENERATION
+              </button>
             </div>
           </div>
         )}
