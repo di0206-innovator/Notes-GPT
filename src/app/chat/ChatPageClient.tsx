@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useEffect, useCallback } from 'react';
+import Link from 'next/link';
 import {
   PanelLeftClose,
   PanelLeftOpen,
@@ -334,12 +335,12 @@ export default function ChatPageClient() {
                 <PanelLeftOpen className="w-4 h-4" />
               )}
             </button>
-            <div className="flex items-center gap-2">
+            <Link href="/" className="flex items-center gap-2 hover:opacity-80 transition-opacity">
               <span className="text-sm font-bold tracking-tight text-white uppercase">[ CAMPUS_STUDY_GPT ]</span>
               <span className="text-[9px] font-bold border border-white px-2 py-0.5 bg-black">
                 RAG_COMPILER
               </span>
-            </div>
+            </Link>
           </div>
 
           {/* Hybrid Mode Toggle Segment Control */}

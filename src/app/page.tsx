@@ -1,7 +1,40 @@
+'use client';
+
+import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { BookOpen, Layers, HelpCircle, FileSignature, Terminal } from 'lucide-react';
 
+type Message = {
+  role: 'user' | 'assistant' | 'system';
+  content: string;
+};
+
 export default function Home() {
+  const [history, setHistory] = useState<Message[]>([]);
+
+  useEffect(() => {
+    const saved = localStorage.getItem('campus_study_chat_history');
+    if (saved) {
+      try {
+        const parsed = JSON.parse(saved);
+        if (Array.isArray(parsed)) {
+          setTimeout(() => {
+            setHistory(parsed);
+          }, 0);
+        }
+      } catch (e) {
+        console.error('Failed to parse chat history:', e);
+      }
+    }
+  }, []);
+
+  // Filter out system messages and default greeting if other messages exist
+  const displayHistory = history.filter((msg, idx) => {
+    if (msg.role === 'system') return false;
+    if (idx === 0 && msg.role === 'assistant' && history.length > 1) return false;
+    return true;
+  }).slice(-4); // Keep last 4 messages
+
   return (
     <div className="min-h-screen bg-black text-white font-mono relative overflow-hidden flex flex-col justify-between crt-power">
       {/* CRT scanline overlay */}
@@ -9,12 +42,12 @@ export default function Home() {
 
       {/* Navigation */}
       <nav className="relative z-10 flex items-center justify-between px-8 py-6 max-w-7xl mx-auto w-full border-b-2 border-white bg-black">
-        <div className="flex items-center space-x-3">
+        <Link href="/" className="flex items-center space-x-3 hover:opacity-80 transition-opacity">
           <Terminal className="w-5 h-5 text-white" />
           <span className="text-sm font-bold uppercase tracking-widest text-white">
             [ CAMPUS_STUDY_GPT ]
           </span>
-        </div>
+        </Link>
 
         <Link
           href="/chat"
@@ -58,6 +91,51 @@ export default function Home() {
             <Terminal className="w-4 h-4" />
           </Link>
         </div>
+
+        {/* Chat History Panel */}
+        {displayHistory.length > 0 && (
+          <div className="w-full max-w-2xl mt-12 border-2 border-white bg-black p-6 text-left reveal-card reveal-card-delay-4 brutalist-pop">
+            <div className="flex items-center justify-between border-b border-white/20 pb-3 mb-4">
+              <div className="flex items-center gap-2">
+                <Terminal className="w-4 h-4 text-white animate-pulse" />
+                <span className="text-xs font-bold uppercase tracking-widest text-white">
+                  [ CHAT_SESSION_HISTORY_LOGS ]
+                </span>
+              </div>
+              <button
+                onClick={() => {
+                  if (confirm("Wipe all saved chat history logs? This cannot be undone.")) {
+                    localStorage.removeItem("campus_study_chat_history");
+                    setHistory([]);
+                  }
+                }}
+                className="text-[9px] border border-white/40 px-2 py-0.5 hover:bg-red-600 hover:text-white hover:border-red-600 transition-colors uppercase font-bold"
+              >
+                [ PURGE ]
+              </button>
+            </div>
+            <div className="space-y-3 max-h-48 overflow-y-auto pr-2 custom-scrollbar text-[11px]">
+              {displayHistory.map((msg, idx) => (
+                <div key={idx} className="border-l-2 border-white/30 pl-3 py-1">
+                  <span className={`font-bold uppercase tracking-wider ${msg.role === 'user' ? 'text-white/80' : 'text-green-400'}`}>
+                    {msg.role === 'user' ? '> USER' : '> COGNITIVE_ENGINE'}
+                  </span>
+                  <p className="text-white/60 mt-1 line-clamp-2 uppercase">
+                    {msg.content}
+                  </p>
+                </div>
+              ))}
+            </div>
+            <div className="mt-4 pt-3 border-t border-white/20 text-center">
+              <Link
+                href="/chat"
+                className="text-xs font-bold hover:underline uppercase text-white"
+              >
+                {"[ CONTINUE ACTIVE TERMINAL SESSION -> ]"}
+              </Link>
+            </div>
+          </div>
+        )}
 
         {/* Feature Grid */}
         <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mt-20 w-full">

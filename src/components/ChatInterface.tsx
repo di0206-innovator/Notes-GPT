@@ -45,6 +45,7 @@ export default function ChatInterface({
   const [progressMessage, setProgressMessage] = useState('');
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const abortControllerRef = useRef<AbortController | null>(null);
+  const isLoadedRef = useRef(false);
 
   const scrollToBottom = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
@@ -52,6 +53,31 @@ export default function ChatInterface({
 
   useEffect(() => {
     scrollToBottom();
+  }, [messages]);
+
+  // Load chat history from localStorage on mount
+  useEffect(() => {
+    const saved = localStorage.getItem('campus_study_chat_history');
+    if (saved) {
+      try {
+        const parsed = JSON.parse(saved);
+        if (Array.isArray(parsed) && parsed.length > 0) {
+          setTimeout(() => {
+            setMessages(parsed);
+          }, 0);
+        }
+      } catch (e) {
+        console.error('Failed to parse saved chat history:', e);
+      }
+    }
+    isLoadedRef.current = true;
+  }, []);
+
+  // Save chat history to localStorage whenever messages change
+  useEffect(() => {
+    if (isLoadedRef.current) {
+      localStorage.setItem('campus_study_chat_history', JSON.stringify(messages));
+    }
   }, [messages]);
 
   const sendMessage = async (textToSend: string) => {
