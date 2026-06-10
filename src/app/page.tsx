@@ -11,6 +11,7 @@ type Message = {
 
 export default function Home() {
   const [history, setHistory] = useState<Message[]>([]);
+  const [effectsEnabled, setEffectsEnabled] = useState(true);
 
   useEffect(() => {
     const saved = localStorage.getItem('campus_study_chat_history');
@@ -26,6 +27,20 @@ export default function Home() {
         console.error('Failed to parse chat history:', e);
       }
     }
+
+    const savedSettings = localStorage.getItem('campus_study_settings');
+    if (savedSettings) {
+      try {
+        const parsed = JSON.parse(savedSettings);
+        if (parsed && typeof parsed.effectsEnabled === 'boolean') {
+          setTimeout(() => {
+            setEffectsEnabled(parsed.effectsEnabled);
+          }, 0);
+        }
+      } catch (e) {
+        console.error('Failed to parse settings:', e);
+      }
+    }
   }, []);
 
   // Filter out system messages and default greeting if other messages exist
@@ -36,9 +51,9 @@ export default function Home() {
   }).slice(-4); // Keep last 4 messages
 
   return (
-    <div className="min-h-screen bg-black text-white font-mono relative overflow-hidden flex flex-col justify-between crt-power">
+    <div className={`min-h-screen bg-black text-white font-mono relative overflow-hidden flex flex-col justify-between ${effectsEnabled ? 'crt-power' : ''}`}>
       {/* CRT scanline overlay */}
-      <div className="crt-overlay" />
+      {effectsEnabled && <div className="crt-overlay" />}
 
       {/* Navigation */}
       <nav className="relative z-10 flex items-center justify-between px-8 py-6 max-w-7xl mx-auto w-full border-b-2 border-white bg-black">
@@ -66,7 +81,7 @@ export default function Home() {
         </div>
 
         {/* Big Brutalist Monospace Header */}
-        <h1 className="text-3xl md:text-5xl lg:text-6xl font-black uppercase tracking-tight text-white mb-6 leading-tight max-w-4xl glitch-hover select-none cursor-default">
+        <h1 className={`text-3xl md:text-5xl lg:text-6xl font-black uppercase tracking-tight text-white mb-6 leading-tight max-w-4xl select-none cursor-default ${effectsEnabled ? 'glitch-hover' : ''}`}>
           COMPILE TEXTBOOKS & NOTES.<br />
           ACE YOUR EXAMS.
         </h1>
@@ -94,7 +109,7 @@ export default function Home() {
 
         {/* Chat History Panel */}
         {displayHistory.length > 0 && (
-          <div className="w-full max-w-2xl mt-12 border-2 border-white bg-black p-6 text-left reveal-card reveal-card-delay-4 brutalist-pop">
+          <div className={`w-full max-w-2xl mt-12 border-2 border-white bg-black p-6 text-left brutalist-pop ${effectsEnabled ? 'reveal-card reveal-card-delay-4' : ''}`}>
             <div className="flex items-center justify-between border-b border-white/20 pb-3 mb-4">
               <div className="flex items-center gap-2">
                 <Terminal className="w-4 h-4 text-white animate-pulse" />
@@ -140,7 +155,7 @@ export default function Home() {
         {/* Feature Grid */}
         <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mt-20 w-full">
           {/* Notes Card */}
-          <div className="border-2 border-white bg-black p-6 text-left group hover:bg-white hover:text-black transition-all reveal-card reveal-card-delay-1 brutalist-pop">
+          <div className={`border-2 border-white bg-black p-6 text-left group hover:bg-white hover:text-black transition-all brutalist-pop ${effectsEnabled ? 'reveal-card reveal-card-delay-1' : ''}`}>
             <div className="w-8 h-8 border border-white group-hover:border-black flex items-center justify-center mb-6">
               <BookOpen className="w-4.5 h-4.5" />
             </div>
@@ -151,7 +166,7 @@ export default function Home() {
           </div>
 
           {/* Flashcards Card */}
-          <div className="border-2 border-white bg-black p-6 text-left group hover:bg-white hover:text-black transition-all reveal-card reveal-card-delay-2 brutalist-pop">
+          <div className={`border-2 border-white bg-black p-6 text-left group hover:bg-white hover:text-black transition-all brutalist-pop ${effectsEnabled ? 'reveal-card reveal-card-delay-2' : ''}`}>
             <div className="w-8 h-8 border border-white group-hover:border-black flex items-center justify-center mb-6">
               <Layers className="w-4.5 h-4.5" />
             </div>
@@ -162,7 +177,7 @@ export default function Home() {
           </div>
 
           {/* Questions Card */}
-          <div className="border-2 border-white bg-black p-6 text-left group hover:bg-white hover:text-black transition-all reveal-card reveal-card-delay-3 brutalist-pop">
+          <div className={`border-2 border-white bg-black p-6 text-left group hover:bg-white hover:text-black transition-all brutalist-pop ${effectsEnabled ? 'reveal-card reveal-card-delay-3' : ''}`}>
             <div className="w-8 h-8 border border-white group-hover:border-black flex items-center justify-center mb-6">
               <HelpCircle className="w-4.5 h-4.5" />
             </div>
@@ -173,7 +188,7 @@ export default function Home() {
           </div>
 
           {/* Exam Simulator Card */}
-          <div className="border-2 border-white bg-black p-6 text-left group hover:bg-white hover:text-black transition-all reveal-card reveal-card-delay-4 brutalist-pop">
+          <div className={`border-2 border-white bg-black p-6 text-left group hover:bg-white hover:text-black transition-all brutalist-pop ${effectsEnabled ? 'reveal-card reveal-card-delay-4' : ''}`}>
             <div className="w-8 h-8 border border-white group-hover:border-black flex items-center justify-center mb-6">
               <FileSignature className="w-4.5 h-4.5" />
             </div>

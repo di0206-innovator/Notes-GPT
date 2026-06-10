@@ -113,7 +113,9 @@ ${context}`;
     if (start === -1 || end === -1 || start >= end) {
       throw new Error('No valid JSON object structure found in LLM response.');
     }
-    const jsonStr = trimmed.substring(start, end + 1);
+    let jsonStr = trimmed.substring(start, end + 1);
+    // Remove trailing commas in JSON arrays/objects to prevent parsing crashes
+    jsonStr = jsonStr.replace(/,(\s*[\]}])/g, '$1');
     const result = JSON.parse(jsonStr);
     return {
       revisionNotes: result.revisionNotes || 'No notes generated.',

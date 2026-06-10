@@ -14,6 +14,7 @@ export interface Settings {
   ollamaUrl: string;
   ollamaModel: string;
   webLlmModel: string;
+  effectsEnabled: boolean;
 }
 
 interface SettingsModalProps {
@@ -371,11 +372,35 @@ export default function SettingsModal({
             </span>
           </div>
 
+          {/* UI Effects Toggle */}
+          <div className="border-t border-dashed border-white/20 pt-4 flex flex-col gap-2">
+            <label className="text-[10px] font-bold uppercase tracking-wider text-white flex items-center gap-1.5">
+              <Activity className="w-3.5 h-3.5" />
+              <span>[6] ACCESSIBILITY & PERFORMANCE</span>
+            </label>
+            <div className="flex justify-between items-center bg-white/5 p-3 border border-white/20">
+              <span className="text-[9px] uppercase text-white/60 max-w-[280px] leading-relaxed font-semibold">
+                DISABLE CRT SCANLINES, FLICKER OVERLAY, AND GLITCH TEXT EFFECTS FOR VISUAL COMFORT AND HIGHER PERFORMANCE.
+              </span>
+              <button
+                type="button"
+                onClick={() => {
+                  onUpdateSettings({ ...settings, effectsEnabled: !settings.effectsEnabled });
+                }}
+                className={`retro-button px-3 py-1.5 text-[10px] font-bold cursor-pointer ${
+                  settings.effectsEnabled ? 'bg-black text-white' : 'bg-white text-black'
+                }`}
+              >
+                {settings.effectsEnabled ? 'DISABLE EFFECTS' : 'ENABLE EFFECTS'}
+              </button>
+            </div>
+          </div>
+
           {/* Reset IndexedDB Store */}
           <div className="border-t border-dashed border-white/20 pt-4 flex flex-col gap-2.5">
             <label className="text-[10px] font-bold uppercase tracking-wider text-white flex items-center gap-1.5">
               <Database className="w-3.5 h-3.5" />
-              <span>[6] STORAGE ADMINISTRATION</span>
+              <span>[7] STORAGE ADMINISTRATION</span>
             </label>
             <div className="flex justify-between items-center bg-white/5 p-3 border border-white/20">
               <span className="text-[9px] uppercase text-white/60 max-w-[280px] leading-relaxed">

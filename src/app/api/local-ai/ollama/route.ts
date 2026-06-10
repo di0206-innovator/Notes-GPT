@@ -21,6 +21,24 @@ import { NextResponse } from 'next/server';
 export async function POST(req: Request) {
   try {
     const { action, url, model, systemPrompt, userPrompt, temperature } = await req.json();
+    
+    if (url) {
+      try {
+        const parsedUrl = new URL(url);
+        if (parsedUrl.protocol !== 'http:' && parsedUrl.protocol !== 'https:') {
+          return NextResponse.json(
+            { error: 'Invalid URL protocol. Only HTTP and HTTPS protocols are permitted.' },
+            { status: 400 }
+          );
+        }
+      } catch {
+        return NextResponse.json(
+          { error: 'Malformed Ollama URL. Please provide a valid HTTP/HTTPS endpoint.' },
+          { status: 400 }
+        );
+      }
+    }
+
     const baseUrl = (url || 'http://localhost:11434').replace(/\/$/, '');
 
     // --- Action: Check Connection & Model Status ---

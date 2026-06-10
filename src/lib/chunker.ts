@@ -20,8 +20,15 @@ export function chunkText(
   pageTexts: string[],
   options: { chunkSize?: number; chunkOverlap?: number } = {}
 ): TextChunk[] {
-  const chunkSize = options.chunkSize || DEFAULT_CHUNK_SIZE;
-  const chunkOverlap = options.chunkOverlap || DEFAULT_CHUNK_OVERLAP;
+  let chunkSize = options.chunkSize || DEFAULT_CHUNK_SIZE;
+  let chunkOverlap = options.chunkOverlap || DEFAULT_CHUNK_OVERLAP;
+
+  if (chunkSize <= 0) {
+    chunkSize = DEFAULT_CHUNK_SIZE;
+  }
+  if (chunkOverlap >= chunkSize) {
+    chunkOverlap = Math.floor(chunkSize * 0.2); // Fallback safety limit (20% overlap)
+  }
 
   const chunks: TextChunk[] = [];
 

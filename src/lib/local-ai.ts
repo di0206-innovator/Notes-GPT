@@ -429,7 +429,9 @@ ${contextText}`;
 
   let flashcards: Record<string, unknown>[] = [];
   try {
-    const jsonStr = flashcardsRaw.replace(/^```json/, '').replace(/```$/, '').trim();
+    let jsonStr = flashcardsRaw.replace(/^```json/, '').replace(/```$/, '').trim();
+    // Remove trailing commas in JSON arrays/objects to prevent parsing crashes
+    jsonStr = jsonStr.replace(/,(\s*[\]}])/g, '$1');
     flashcards = JSON.parse(jsonStr);
   } catch {
     // Fallback: parse or generate simple flashcards

@@ -109,6 +109,17 @@ export default function DocumentPanel({
         throw new Error('Only PDF and image files (PNG, JPEG, WEBP) are supported.');
       }
 
+      // Enforce file size limits to prevent browser out-of-memory or tab crashes
+      const MAX_PDF_SIZE = 25 * 1024 * 1024; // 25MB
+      const MAX_IMG_SIZE = 10 * 1024 * 1024; // 10MB
+
+      if (isPDF && file.size > MAX_PDF_SIZE) {
+        throw new Error('PDF size exceeds the 25MB limit. Please upload a smaller document.');
+      }
+      if (isImage && file.size > MAX_IMG_SIZE) {
+        throw new Error('Image size exceeds the 10MB limit. Please upload a smaller note image.');
+      }
+
       if (mode === 'local') {
         let text = '';
         let pageTexts: string[] = [];

@@ -71,6 +71,7 @@ export default function ChatPageClient() {
     ollamaUrl: string;
     ollamaModel: string;
     webLlmModel: string;
+    effectsEnabled: boolean;
   }>(() => {
     if (typeof window !== 'undefined') {
       try {
@@ -86,6 +87,7 @@ export default function ChatPageClient() {
             ollamaUrl: parsed.ollamaUrl || 'http://localhost:11434',
             ollamaModel: parsed.ollamaModel || 'deepseek-r1:8b',
             webLlmModel: parsed.webLlmModel || 'Phi-3-mini-4k-instruct-q4f16-1K-MLC',
+            effectsEnabled: typeof parsed.effectsEnabled === 'boolean' ? parsed.effectsEnabled : true,
           };
         }
       } catch (e) {
@@ -101,6 +103,7 @@ export default function ChatPageClient() {
       ollamaUrl: 'http://localhost:11434',
       ollamaModel: 'deepseek-r1:8b',
       webLlmModel: 'Phi-3-mini-4k-instruct-q4f16-1K-MLC',
+      effectsEnabled: true,
     };
   });
 
@@ -289,7 +292,7 @@ export default function ChatPageClient() {
   if (authLoading) {
     return (
       <div className="min-h-screen bg-black flex flex-col items-center justify-center font-mono">
-        <div className="crt-overlay" />
+        {settings.effectsEnabled && <div className="crt-overlay" />}
         <span className="text-sm font-bold text-white animate-flash">[ INITIALIZING SECURE SHELL... ]</span>
       </div>
     );
@@ -301,7 +304,7 @@ export default function ChatPageClient() {
 
   return (
     <div className="flex h-screen bg-black overflow-hidden text-white font-mono relative">
-      <div className="crt-overlay" />
+      {settings.effectsEnabled && <div className="crt-overlay" />}
 
       {/* Document Sidebar (collapsible) */}
       {showPanel && (
