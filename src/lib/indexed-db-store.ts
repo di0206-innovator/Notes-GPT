@@ -4,7 +4,7 @@
  * Guarded against SSR build-time execution.
  */
 
-const DB_NAME = 'CampusStudyDB';
+const DB_NAME = 'NotesStudyDB';
 const DB_VERSION = 1;
 
 export interface LocalDocument {

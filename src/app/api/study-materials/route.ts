@@ -1,3 +1,4 @@
+import '@/lib/dns-patch';
 import { NextRequest, NextResponse } from 'next/server';
 import { generateStudyKit } from '@/lib/study-generator';
 import { listDocuments, getCloudStudyKit, saveCloudStudyKit } from '@/lib/vector-store';

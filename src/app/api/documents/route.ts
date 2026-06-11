@@ -1,3 +1,4 @@
+import '@/lib/dns-patch';
 import { NextResponse } from 'next/server';
 import { listDocuments, deleteDocument } from '@/lib/vector-store';
 import { verifySession } from '@/lib/firebase-admin';

@@ -20,7 +20,7 @@ export default function ProfileModal({ isOpen, onClose, userId, mode }: ProfileM
   const [loadingStats, setLoadingStats] = useState(true);
 
   const isLocalGuest = userId === 'local-guest-user';
-  const email = auth.currentUser?.email || (isLocalGuest ? 'LOCAL_GUEST@OFFLINE.SYSTEM' : 'GUEST_USER@CAMPUS.INTERNAL');
+  const email = auth.currentUser?.email || (isLocalGuest ? 'LOCAL_GUEST@OFFLINE.SYSTEM' : 'GUEST_USER@NOTES.INTERNAL');
   const creationTime = auth.currentUser?.metadata.creationTime || 'SYSTEM INITIALIZED';
 
   useEffect(() => {
@@ -184,7 +184,7 @@ export default function ProfileModal({ isOpen, onClose, userId, mode }: ProfileM
 
         {/* Footer tip */}
         <div className="mt-6 text-center border-t border-dashed border-white/20 pt-4 text-[9px] text-white/50 uppercase">
-          CampusStudyGPT Secure Local Workstation Shell
+          NotesGPT Secure Local Workstation Shell
         </div>
       </motion.div>
     </div>

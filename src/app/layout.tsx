@@ -8,8 +8,8 @@ const outfit = Outfit({
 });
 
 export const metadata: Metadata = {
-  title: "CampusGPT | Your Intelligent Academic Companion",
-  description: "Experience the next generation of campus assistance with CampusGPT. AI-powered chat, interactive maps, and smart academic support.",
+  title: "NotesGPT | Your Intelligent Academic Companion",
+  description: "Experience the next generation of learning assistance with NotesGPT. AI-powered chat, notes organization, and smart academic support.",
 };
 
 export default function RootLayout({

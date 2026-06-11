@@ -1,3 +1,4 @@
+import '@/lib/dns-patch';
 import { NextRequest, NextResponse } from 'next/server';
 import { retrieveContext, formatContextForLLM } from '@/lib/rag-pipeline';
 import { generateChatResponse } from '@/lib/gemini';
@@ -36,7 +37,7 @@ export async function POST(request: NextRequest) {
     const contextText = formatContextForLLM(relevantChunks);
       
     // 3. Construct the system prompt
-    const systemPrompt = `You are a highly precise and strict AI study assistant for CampusStudyGPT.
+    const systemPrompt = `You are a highly precise and strict AI study assistant for NotesGPT.
 Your primary task is to answer user questions based ONLY on the provided context excerpts from the uploaded study materials.
 
 Follow these rules strictly:

@@ -9,7 +9,7 @@
     "providers": {
       "emailPassword": true,
       "googleSignIn": {
-        "oAuthBrandDisplayName": "Campus GPT",
+        "oAuthBrandDisplayName": "Notes GPT",
         "supportEmail": "divyanshu.b.sinha@gmail.com"
       }
     }

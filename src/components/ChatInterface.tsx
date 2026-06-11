@@ -57,7 +57,7 @@ export default function ChatInterface({
 
   // Load chat history from localStorage on mount
   useEffect(() => {
-    const saved = localStorage.getItem('campus_study_chat_history');
+    const saved = localStorage.getItem('notes_gpt_chat_history');
     if (saved) {
       try {
         const parsed = JSON.parse(saved);
@@ -76,7 +76,7 @@ export default function ChatInterface({
   // Save chat history to localStorage whenever messages change
   useEffect(() => {
     if (isLoadedRef.current) {
-      localStorage.setItem('campus_study_chat_history', JSON.stringify(messages));
+      localStorage.setItem('notes_gpt_chat_history', JSON.stringify(messages));
     }
   }, [messages]);
 
@@ -106,7 +106,7 @@ export default function ChatInterface({
           .map((m) => `${m.role === 'user' ? 'USER' : 'ASSISTANT'}: ${m.content}`)
           .join('\n\n');
 
-        const systemPrompt = `You are a highly precise and strict AI study assistant for CampusStudyGPT.
+        const systemPrompt = `You are a highly precise and strict AI study assistant for NotesGPT.
 Your primary task is to answer user questions based ONLY on the provided context excerpts from the uploaded study materials.
 
 Follow these rules strictly:

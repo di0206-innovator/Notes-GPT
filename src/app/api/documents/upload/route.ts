@@ -1,3 +1,4 @@
+import '@/lib/dns-patch';
 import { NextResponse } from 'next/server';
 import { ingestDocument, ingestImageDocument } from '@/lib/rag-pipeline';
 import { verifySession } from '@/lib/firebase-admin';

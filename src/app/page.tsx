@@ -14,7 +14,7 @@ export default function Home() {
   const [effectsEnabled, setEffectsEnabled] = useState(true);
 
   useEffect(() => {
-    const saved = localStorage.getItem('campus_study_chat_history');
+    const saved = localStorage.getItem('notes_gpt_chat_history');
     if (saved) {
       try {
         const parsed = JSON.parse(saved);
@@ -28,7 +28,7 @@ export default function Home() {
       }
     }
 
-    const savedSettings = localStorage.getItem('campus_study_settings');
+    const savedSettings = localStorage.getItem('notes_gpt_settings');
     if (savedSettings) {
       try {
         const parsed = JSON.parse(savedSettings);
@@ -60,7 +60,7 @@ export default function Home() {
         <Link href="/" className="flex items-center space-x-3 hover:opacity-80 transition-opacity">
           <Terminal className="w-5 h-5 text-white" />
           <span className="text-sm font-bold uppercase tracking-widest text-white">
-            [ CAMPUS_STUDY_GPT ]
+            [ NOTES_GPT ]
           </span>
         </Link>
 
@@ -120,7 +120,7 @@ export default function Home() {
               <button
                 onClick={() => {
                   if (confirm("Wipe all saved chat history logs? This cannot be undone.")) {
-                    localStorage.removeItem("campus_study_chat_history");
+                    localStorage.removeItem("notes_gpt_chat_history");
                     setHistory([]);
                   }
                 }}
@@ -204,7 +204,7 @@ export default function Home() {
       <footer className="relative z-10 border-t-2 border-white py-8 px-8 bg-black">
         <div className="max-w-7xl mx-auto flex flex-col md:flex-row justify-between items-center text-white/50 text-[10px] uppercase gap-4 md:gap-0 font-mono">
           <div className="flex flex-col gap-1.5">
-            <p>© 2026 CampusStudyGPT. SECURE INTERNAL SYSTEM HOSTED LOCALLY.</p>
+            <p>© 2026 NotesGPT. SECURE INTERNAL SYSTEM HOSTED LOCALLY.</p>
             <p className="text-white font-bold tracking-wider">[ PROJECT BY DIVYANSHU SINHA ]</p>
           </div>
           <div className="flex space-x-6">

@@ -40,7 +40,7 @@ export default function ChatPageClient() {
   const [mode, setMode] = useState<'cloud' | 'local'>(() => {
     if (typeof window !== 'undefined') {
       try {
-        const stored = localStorage.getItem('campus_study_settings');
+        const stored = localStorage.getItem('notes_gpt_settings');
         if (stored) {
           const parsed = JSON.parse(stored);
           return parsed.defaultMode === 'local' ? 'local' : 'cloud';
@@ -75,7 +75,7 @@ export default function ChatPageClient() {
   }>(() => {
     if (typeof window !== 'undefined') {
       try {
-        const stored = localStorage.getItem('campus_study_settings');
+        const stored = localStorage.getItem('notes_gpt_settings');
         if (stored) {
           const parsed = JSON.parse(stored);
           return {
@@ -124,7 +124,7 @@ export default function ChatPageClient() {
     setSettings(newSettings);
     setMode(newSettings.defaultMode);
     try {
-      localStorage.setItem('campus_study_settings', JSON.stringify(newSettings));
+      localStorage.setItem('notes_gpt_settings', JSON.stringify(newSettings));
     } catch (e) {
       console.error('Failed to save settings:', e);
     }
@@ -339,7 +339,7 @@ export default function ChatPageClient() {
               )}
             </button>
             <Link href="/" className="flex items-center gap-2 hover:opacity-80 transition-opacity">
-              <span className="text-sm font-bold tracking-tight text-white uppercase">[ CAMPUS_STUDY_GPT ]</span>
+              <span className="text-sm font-bold tracking-tight text-white uppercase">[ NOTES_GPT ]</span>
               <span className="text-[9px] font-bold border border-white px-2 py-0.5 bg-black">
                 RAG_COMPILER
               </span>

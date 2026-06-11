@@ -177,7 +177,7 @@ export default function AuthGate({ onAuthenticated }: AuthGateProps) {
           >
             {isSignUp
               ? 'Already registered? Access your account'
-              : 'Create a new campus credentials account'}
+              : 'Create a new notes credentials account'}
           </button>
         </div>
 

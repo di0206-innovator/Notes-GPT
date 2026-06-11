@@ -64,7 +64,7 @@ let currentWebLlmModelId = '';
 function getSettingsFromStorage() {
   if (typeof window === 'undefined') return null;
   try {
-    const stored = localStorage.getItem('campus_study_settings');
+    const stored = localStorage.getItem('notes_study_settings');
     if (stored) return JSON.parse(stored);
   } catch (e) {
     console.error('Failed to parse local storage settings in local-ai:', e);
@@ -288,7 +288,7 @@ export async function generateLocalResponse(
   try {
     // For local window.ai/assistant, evaluate system prompt context as part of the user query
     // to prevent extremely slow session creation times.
-    const cleanSystemPrompt = "You are a precise and grounded study assistant for CampusStudyGPT.";
+    const cleanSystemPrompt = "You are a precise and grounded study assistant for NotesGPT.";
     const combinedUserPrompt = `${systemPrompt}\n\nUSER QUESTION:\n${userPrompt}`;
 
     if (win.ai && win.ai.languageModel) {

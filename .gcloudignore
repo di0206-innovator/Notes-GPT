@@ -20,6 +20,4 @@ firestore.indexes.json
 README.md
 LICENSE
 AGENTS.md
-eslint.config.mjs
-postcss.config.mjs
 tsconfig.tsbuildinfo

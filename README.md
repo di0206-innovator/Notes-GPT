@@ -1,4 +1,4 @@
-# CampusStudyGPT 📚
+# NotesGPT 📚
 
 An AI-powered, offline-capable study companion that transforms your PDFs, textbooks, and handwritten notes into structured revision materials, flashcards, question banks, and mock exams. Works like NotebookLM — but runs locally on your device or in-browser.
 
@@ -44,8 +44,8 @@ For detailed installation and setup instructions, please see the [CONTRIBUTING.m
 
 1. **Clone & Install**:
    ```bash
-   git clone https://github.com/your-username/Rag-Campus-GPT.git
-   cd Rag-Campus-GPT
+   git clone https://github.com/your-username/Rag-Notes-GPT.git
+   cd Rag-Notes-GPT
    npm install
    ```
 2. **Environment**:
