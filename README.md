@@ -6,7 +6,7 @@ An AI-powered, offline-capable study companion that transforms your PDFs, textbo
 
 ## Key Features
 
-- **📄 Robust Document Ingestion** — Upload textbook PDFs and note images (PNG/JPG/WEBP). Extract text locally via PDF.js and Tesseract.js OCR, or on the server via Gemini Vision.
+- **📄 Robust Document Ingestion** — Upload PDF textbooks, note images (PNG/JPG/WEBP), Word documents (.docx), and PowerPoint presentations (.pptx). Extract text locally via PDF.js and Tesseract.js OCR, or on the server via pdf-parse, Gemini Generative Vision, and OfficeParser.
 - **💬 Context-Grounded Chat** — Ask questions about your materials. Answers are strictly grounded in retrieved segments and feature inline source citations.
 - **📝 Revision Notes** — Automatically generates structured, topic-wise study notes with complete LaTeX math equation formatting ($$...$$).
 - **❓ Practice Q&A Bank** — Creates Multiple Choice Questions (MCQs), short definitions, and long analytical prompts with full answer keys.
@@ -30,7 +30,7 @@ An AI-powered, offline-capable study companion that transforms your PDFs, textbo
 | **AI (Local)** | Ollama (Local Daemon), WebLLM (Browser WebGPU), Chrome window.ai |
 | **Vector DB** | Firestore vector collections + Cosine similarity (Cloud) |
 | **Client Storage** | IndexedDB with Local TF-IDF search index |
-| **PDF Extraction** | PDF.js (Browser), pdf-parse (Node.js API) |
+| **PDF & Office Extraction** | PDF.js (Browser), pdf-parse, officeparser (Node.js API) |
 | **OCR Engines** | Tesseract.js (Client), Gemini Generative Vision (Server) |
 | **User Identity** | Firebase Auth (Guest Sessions & Email Signups) |
 
