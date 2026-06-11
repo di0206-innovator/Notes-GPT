@@ -1,6 +1,6 @@
 import '@/lib/dns-patch';
 import { NextResponse } from 'next/server';
-import { listDocuments, deleteDocument } from '@/lib/vector-store';
+import { listDocuments, deleteDocument, clearCloudStore } from '@/lib/vector-store';
 import { verifySession } from '@/lib/firebase-admin';
 
 /**
@@ -49,6 +49,11 @@ export async function DELETE(req: Request) {
         { error: 'documentId is required.' },
         { status: 400 }
       );
+    }
+
+    if (documentId === 'all') {
+      await clearCloudStore(sessionId);
+      return NextResponse.json({ success: true, message: 'All cloud data cleared.' });
     }
 
     const deleted = await deleteDocument(documentId, sessionId);

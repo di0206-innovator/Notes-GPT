@@ -232,3 +232,44 @@ export async function getCloudStudyKit(sessionId: string): Promise<Record<string
   }
   return kitSnap.data() as Record<string, unknown>;
 }
+
+/**
+ * Clear all documents, chunks, and study kits for a given sessionId from Firestore.
+ */
+export async function clearCloudStore(sessionId: string): Promise<void> {
+  // 1. Delete study kit
+  const kitRef = db.collection('studyKits').doc(sessionId);
+  await kitRef.delete().catch(() => {});
+
+  // 2. Delete all documents for this session
+  const docsSnapshot = await db.collection('documents')
+    .where('sessionId', '==', sessionId)
+    .get();
+  
+  if (!docsSnapshot.empty) {
+    const docBatch = db.batch();
+    docsSnapshot.forEach((docSnap) => {
+      docBatch.delete(docSnap.ref);
+    });
+    await docBatch.commit();
+  }
+
+  // 3. Delete all chunks for this session (batched by 500)
+  const chunksSnapshot = await db.collection('chunks')
+    .where('sessionId', '==', sessionId)
+    .get();
+
+  if (!chunksSnapshot.empty) {
+    const BATCH_LIMIT = 500;
+    const docs = chunksSnapshot.docs;
+    for (let i = 0; i < docs.length; i += BATCH_LIMIT) {
+      const docBatch = docs.slice(i, i + BATCH_LIMIT);
+      const batch = db.batch();
+      docBatch.forEach((doc) => {
+        batch.delete(doc.ref);
+      });
+      await batch.commit();
+    }
+  }
+}
+

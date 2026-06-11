@@ -2,7 +2,8 @@
 
 import { useState, useEffect } from 'react';
 import Link from 'next/link';
-import { BookOpen, Layers, HelpCircle, FileSignature, Terminal } from 'lucide-react';
+import { BookOpen, Layers, HelpCircle, FileSignature, Terminal, X } from 'lucide-react';
+import { AnimatePresence, motion } from 'framer-motion';
 
 type Message = {
   role: 'user' | 'assistant' | 'system';
@@ -12,6 +13,7 @@ type Message = {
 export default function Home() {
   const [history, setHistory] = useState<Message[]>([]);
   const [effectsEnabled, setEffectsEnabled] = useState(true);
+  const [activeModal, setActiveModal] = useState<'privacy' | 'terms' | 'manual' | null>(null);
 
   useEffect(() => {
     const saved = localStorage.getItem('notes_gpt_chat_history');
@@ -208,12 +210,117 @@ export default function Home() {
             <p className="text-white font-bold tracking-wider">[ PROJECT BY DIVYANSHU SINHA ]</p>
           </div>
           <div className="flex space-x-6">
-            <a href="#" className="hover:text-white underline">PRIVACY</a>
-            <a href="#" className="hover:text-white underline">TERMS</a>
-            <a href="#" className="hover:text-white underline">MANUAL</a>
+            <button onClick={() => setActiveModal('privacy')} className="hover:text-white underline cursor-pointer">PRIVACY</button>
+            <button onClick={() => setActiveModal('terms')} className="hover:text-white underline cursor-pointer">TERMS</button>
+            <button onClick={() => setActiveModal('manual')} className="hover:text-white underline cursor-pointer">MANUAL</button>
           </div>
         </div>
       </footer>
+
+      {/* Retro Info Modal Overlay */}
+      <AnimatePresence>
+        {activeModal && (
+          <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 font-mono">
+            <motion.div
+              initial={{ opacity: 0, scale: 0.95, y: 15 }}
+              animate={{ opacity: 1, scale: 1, y: 0 }}
+              exit={{ opacity: 0, scale: 0.95, y: 15 }}
+              transition={{ type: 'spring', duration: 0.3 }}
+              className="w-full max-w-2xl border-2 border-white bg-black p-6 retro-shadow text-white relative flex flex-col max-h-[80vh]"
+            >
+              {/* Header */}
+              <div className="flex items-center justify-between border-b-2 border-white pb-3 mb-4">
+                <div className="flex items-center gap-2">
+                  <Terminal className="w-4 h-4" />
+                  <span className="font-bold text-xs uppercase tracking-wider">
+                    [ NotesGPT_HELP_SHELL: {activeModal} ]
+                  </span>
+                </div>
+                <button
+                  onClick={() => setActiveModal(null)}
+                  className="p-1 border border-transparent hover:border-white text-white transition-all cursor-pointer"
+                  title="Close modal"
+                >
+                  <X className="w-4 h-4" />
+                </button>
+              </div>
+
+              {/* Content */}
+              <div className="overflow-y-auto pr-2 custom-scrollbar text-xs leading-relaxed space-y-4 uppercase flex-1">
+                {activeModal === 'manual' && (
+                  <div className="space-y-4">
+                    <h2 className="font-bold border-b border-white/20 pb-1 text-white"># USER MANUAL & WORKSTATION GUIDE</h2>
+                    <p className="text-white/80">
+                      NotesGPT is an offline-capable Retrieval-Augmented Generation (RAG) assistant designed to synthesize notes, textbooks, and documents into study kits.
+                    </p>
+                    
+                    <div className="space-y-2">
+                      <h3 className="font-bold text-green-400">// 1. DOCUMENT INGESTION</h3>
+                      <p className="text-white/70">
+                        Upload PDF textbooks or note images (PNG/JPG). In Local Mode, text is extracted privately in your browser using PDF.js and Tesseract OCR. In Cloud Mode, files are securely parsed on the server using Gemini Generative Vision.
+                      </p>
+                    </div>
+
+                    <div className="space-y-2">
+                      <h3 className="font-bold text-green-400">// 2. COGNITIVE ENGINE MODES</h3>
+                      <ul className="list-disc pl-4 space-y-1 text-white/70">
+                        <li><strong>CLOUD MODE:</strong> Uses Google Gemini 1.5 Flash for high-speed indexing, search embeddings, and complex study kit generations. RAG chunks are stored securely in your private Firestore sandbox.</li>
+                        <li><strong>LOCAL MODE (100% PRIVATE):</strong> Runs completely offline. Select from:
+                          <ul className="list-circle pl-4 mt-1 space-y-1">
+                            <li><strong>Ollama:</strong> Runs models like DeepSeek-R1 or Gemma2 using your local background daemon.</li>
+                            <li><strong>WebLLM:</strong> Compiles and runs model weights directly in the browser sandbox using WebGPU.</li>
+                            <li><strong>window.ai:</strong> Probes experimental built-in Chrome Gemini Nano support.</li>
+                          </ul>
+                        </li>
+                      </ul>
+                    </div>
+
+                    <div className="space-y-2">
+                      <h3 className="font-bold text-green-400">// 3. GENERATED KITS</h3>
+                      <p className="text-white/70">
+                        Once compiled, your workspace lists summary notes, LaTeX-supported equations, interactive flip flashcards, practice questions with keys, and print-ready mock exams.
+                      </p>
+                    </div>
+                  </div>
+                )}
+
+                {activeModal === 'terms' && (
+                  <div className="space-y-4">
+                    <h2 className="font-bold border-b border-white/20 pb-1 text-white"># TERMS OF SERVICE</h2>
+                    <p className="text-white/80">
+                      By accessing the NotesGPT RAG workstation, you agree to comply with the following policies:
+                    </p>
+                    <div className="space-y-2 text-white/70">
+                      <p>1. <strong>LICENSE:</strong> NotesGPT is licensed under the MIT open-source license. You may use, copy, modify, and distribute the workstation code for academic and personal use.</p>
+                      <p>2. <strong>INTELLECTUAL PROPERTY:</strong> You retain full ownership of all notes, PDF textbooks, and materials you upload. The system does not claim ownership or rights to any of your intellectual work.</p>
+                      <p>3. <strong>ACADEMIC INTEGRITY:</strong> NotesGPT is built as a study aid for learning, comprehension, and test preparation. Users are solely responsible for ensuring that their use aligns with their university academic code of conduct.</p>
+                    </div>
+                  </div>
+                )}
+
+                {activeModal === 'privacy' && (
+                  <div className="space-y-4">
+                    <h2 className="font-bold border-b border-white/20 pb-1 text-white"># PRIVACY POLICY</h2>
+                    <p className="text-white/80">
+                      NotesGPT treats user privacy as a critical system architecture requirement.
+                    </p>
+                    <div className="space-y-2 text-white/70">
+                      <p>1. <strong>LOCAL MODE PRIVACY:</strong> When running in Local Mode (Ollama or WebLLM), your documents, chunks, and database records remain entirely inside your browser's IndexedDB and local memory. No data is transmitted to external servers.</p>
+                      <p>2. <strong>CLOUD MODE PRIVACY:</strong> In Cloud Mode, your uploaded files are securely chunked and indexed in private Firestore databases isolated by your authenticated UID. Network transit is protected via TLS HTTPS encryption, and documents are only processed by Google Gemini APIs to satisfy study kit requests.</p>
+                      <p>3. <strong>WIPING RECORDS:</strong> You retain complete control over your data. You can delete individual documents, or trigger a full purge by clicking "WIPE ALL SYSTEM DATA" in your Profile panel, which instantly clears both IndexedDB and Firestore collections.</p>
+                    </div>
+                  </div>
+                )}
+              </div>
+
+              {/* Footer */}
+              <div className="border-t border-dashed border-white/20 pt-3 text-[10px] text-white/40 text-center uppercase mt-4">
+                NotesGPT SECURE WORKSTATION HELPDESK
+              </div>
+            </motion.div>
+          </div>
+        )}
+      </AnimatePresence>
     </div>
   );
 }

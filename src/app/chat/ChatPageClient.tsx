@@ -566,6 +566,11 @@ export default function ChatPageClient() {
               onClose={() => setIsProfileOpen(false)}
               userId={userId}
               mode={mode}
+              onLogout={async () => {
+                await signOut(auth);
+                setUserId(null);
+                setIsProfileOpen(false);
+              }}
             />
           )}
         </AnimatePresence>
