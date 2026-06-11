@@ -13,7 +13,7 @@ export interface LocalDocument {
   chunkCount: number;
   totalPages: number;
   uploadedAt: string;
-  type: 'pdf' | 'image';
+  type: 'pdf' | 'image' | 'office';
 }
 
 export interface LocalChunk {

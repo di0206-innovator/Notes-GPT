@@ -1,6 +1,6 @@
 import '@/lib/dns-patch';
 import { NextResponse } from 'next/server';
-import { ingestDocument, ingestImageDocument } from '@/lib/rag-pipeline';
+import { ingestDocument, ingestImageDocument, ingestOfficeDocument } from '@/lib/rag-pipeline';
 import { verifySession } from '@/lib/firebase-admin';
 
 export const maxDuration = 60; // PDF processing + embeddings can take a while
@@ -39,10 +39,11 @@ export async function POST(req: Request) {
     const isPDF = file.type === 'application/pdf' || filenameLower.endsWith('.pdf');
     const isImage = file.type.startsWith('image/') || 
                     /\.(png|jpe?g|webp)$/i.test(filenameLower);
+    const isOffice = filenameLower.endsWith('.docx') || filenameLower.endsWith('.pptx');
 
-    if (!isPDF && !isImage) {
+    if (!isPDF && !isImage && !isOffice) {
       return NextResponse.json(
-        { error: 'Only PDF and image files (PNG, JPEG, WEBP) are supported.' },
+        { error: 'Only PDF, image files (PNG, JPEG, WEBP), Word documents (.docx), and PowerPoint presentations (.pptx) are supported.' },
         { status: 400 }
       );
     }
@@ -56,6 +57,8 @@ export async function POST(req: Request) {
     let result;
     if (isPDF) {
       result = await ingestDocument(buffer, file.name, sessionId);
+    } else if (isOffice) {
+      result = await ingestOfficeDocument(buffer, file.name, sessionId);
     } else {
       let mimeType = file.type;
       if (!mimeType || mimeType === 'application/octet-stream') {
@@ -72,7 +75,7 @@ export async function POST(req: Request) {
       filename: result.filename,
       chunkCount: result.chunkCount,
       totalPages: result.totalPages,
-      type: isPDF ? 'pdf' : 'image',
+      type: isPDF ? 'pdf' : isOffice ? 'office' : 'image',
     });
   } catch (error) {
     const err = error as Error;

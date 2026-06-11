@@ -23,7 +23,7 @@ interface Document {
   chunkCount: number;
   totalPages: number;
   uploadedAt: string;
-  type?: 'pdf' | 'image';
+  type?: 'pdf' | 'image' | 'office';
 }
 
 interface DocumentPanelProps {
@@ -103,15 +103,17 @@ export default function DocumentPanel({
     const isPDF = file.type === 'application/pdf' || filenameLower.endsWith('.pdf');
     const isImage = file.type.startsWith('image/') || 
                     /\.(png|jpe?g|webp)$/i.test(filenameLower);
+    const isOffice = filenameLower.endsWith('.docx') || filenameLower.endsWith('.pptx');
 
     try {
-      if (!isPDF && !isImage) {
-        throw new Error('Only PDF and image files (PNG, JPEG, WEBP) are supported.');
+      if (!isPDF && !isImage && !isOffice) {
+        throw new Error('Only PDF, image files (PNG, JPEG, WEBP), Word documents (.docx), and PowerPoint presentations (.pptx) are supported.');
       }
 
       // Enforce file size limits to prevent browser out-of-memory or tab crashes
       const MAX_PDF_SIZE = 25 * 1024 * 1024; // 25MB
       const MAX_IMG_SIZE = 10 * 1024 * 1024; // 10MB
+      const MAX_OFFICE_SIZE = 15 * 1024 * 1024; // 15MB
 
       if (isPDF && file.size > MAX_PDF_SIZE) {
         throw new Error('PDF size exceeds the 25MB limit. Please upload a smaller document.');
@@ -119,8 +121,15 @@ export default function DocumentPanel({
       if (isImage && file.size > MAX_IMG_SIZE) {
         throw new Error('Image size exceeds the 10MB limit. Please upload a smaller note image.');
       }
+      if (isOffice && file.size > MAX_OFFICE_SIZE) {
+        throw new Error('Office document size exceeds the 15MB limit. Please upload a smaller file.');
+      }
 
       if (mode === 'local') {
+        if (isOffice) {
+          throw new Error('Word (.docx) and PowerPoint (.pptx) documents are only supported in Cloud Mode. Please switch to Cloud Mode to upload Office files.');
+        }
+
         let text = '';
         let pageTexts: string[] = [];
         let totalPages = 1;
@@ -176,7 +185,7 @@ export default function DocumentPanel({
 
         onRefresh();
       } else {
-        setUploadStage(isPDF ? 'Uploading PDF...' : 'Uploading note image...');
+        setUploadStage(isPDF ? 'Uploading PDF...' : isOffice ? 'Uploading Office file...' : 'Uploading note image...');
         const formData = new FormData();
         formData.append('file', file);
 
@@ -296,7 +305,7 @@ export default function DocumentPanel({
       >
         <input
           type="file"
-          accept=".pdf, image/*"
+          accept=".pdf, .docx, .pptx, image/*"
           onChange={handleFileChange}
           disabled={uploading}
           className="absolute inset-0 opacity-0 cursor-pointer z-10"
@@ -314,7 +323,7 @@ export default function DocumentPanel({
               DRAG OR SELECT
             </span>
             <span className="text-[8px] text-white/50 uppercase">
-              PDF, PNG, JPG, WEBP
+              PDF, DOCX, PPTX, PNG, JPG, WEBP
             </span>
           </div>
         )}
@@ -370,6 +379,7 @@ export default function DocumentPanel({
         ) : (
           documents.map((doc) => {
             const isPDF = doc.filename.toLowerCase().endsWith('.pdf');
+            const isOffice = doc.filename.toLowerCase().endsWith('.docx') || doc.filename.toLowerCase().endsWith('.pptx');
             return (
               <div
                 key={doc.documentId}
@@ -378,6 +388,8 @@ export default function DocumentPanel({
                 <div className="p-1.5 border border-white flex-shrink-0">
                   {isPDF ? (
                     <FileText className="w-4 h-4" />
+                  ) : isOffice ? (
+                    <FileText className="w-4 h-4 text-green-400 group-hover:text-black transition-colors" />
                   ) : (
                     <ImageIcon className="w-4 h-4" />
                   )}
@@ -387,7 +399,7 @@ export default function DocumentPanel({
                     {doc.filename}
                   </p>
                   <p className="text-[8px] opacity-70 font-semibold uppercase mt-0.5">
-                    {isPDF ? `${doc.totalPages} PGS` : 'IMAGE'} · {doc.chunkCount} CHUNKS
+                    {isPDF ? `${doc.totalPages} PGS` : isOffice ? 'OFFICE' : 'IMAGE'} · {doc.chunkCount} CHUNKS
                   </p>
                 </div>
                 <button

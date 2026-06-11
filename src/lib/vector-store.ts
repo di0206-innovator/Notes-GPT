@@ -23,7 +23,7 @@ export interface DocumentMeta {
   chunkCount: number;
   totalPages: number;
   uploadedAt: string;
-  type?: 'pdf' | 'image';
+  type?: 'pdf' | 'image' | 'office';
 }
 
 /**

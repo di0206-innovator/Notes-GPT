@@ -143,6 +143,77 @@ export async function ingestImageDocument(
   };
 }
 
+/**
+ * Office document ingestion pipeline: Office file buffer → OfficeParser text → chunk → embed → store.
+ */
+export async function ingestOfficeDocument(
+  buffer: Buffer,
+  filename: string,
+  sessionId: string
+): Promise<IngestResult> {
+  const documentId = uuidv4();
+
+  console.log(`[RAG] Extracting text from Office file "${filename}"...`);
+  
+  // Dynamic import/require to prevent SSR build issues
+  // eslint-disable-next-line @typescript-eslint/no-var-requires
+  const officeParser = require('officeparser');
+  
+  let extractedText = '';
+  try {
+    extractedText = await officeParser.parseOfficePromise(buffer);
+  } catch (err) {
+    console.error('[Office Parse Error]', err);
+    throw new Error('Failed to extract text from this Office file. Please make sure the file is not corrupted.');
+  }
+
+  if (!extractedText || extractedText.trim().length === 0) {
+    throw new Error('No readable text could be extracted from this Office document.');
+  }
+
+  // Office documents don't have page concepts in extracted text, so we treat it as 1 page
+  console.log(`[RAG] Chunking extracted Office text...`);
+  const chunks = chunkText(
+    extractedText,
+    documentId,
+    filename,
+    [extractedText]
+  );
+  console.log(`[RAG] Created ${chunks.length} chunks`);
+
+  // Generate embeddings
+  console.log(`[RAG] Generating embeddings for ${chunks.length} chunks...`);
+  const chunkTexts = chunks.map((c) => c.content);
+  const embeddings = await generateEmbeddings(chunkTexts);
+
+  // Store in vector store
+  console.log(`[RAG] Storing chunks in vector store...`);
+  const storedChunks = chunks.map((chunk, i) => ({
+    ...chunk,
+    embedding: embeddings[i],
+  }));
+
+  const meta: DocumentMeta = {
+    documentId,
+    filename,
+    chunkCount: chunks.length,
+    totalPages: 1,
+    uploadedAt: new Date().toISOString(),
+    type: 'office',
+  };
+
+  await addDocumentChunks(meta, storedChunks, sessionId);
+  console.log(`[RAG] Office document "${filename}" ingested successfully (${chunks.length} chunks)`);
+
+  return {
+    documentId,
+    filename,
+    chunkCount: chunks.length,
+    totalPages: 1,
+  };
+}
+
+
 
 /**
  * Retrieve relevant context for a user query.
