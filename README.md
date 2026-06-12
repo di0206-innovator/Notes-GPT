@@ -82,6 +82,8 @@ To run Local AI offline without consuming any cloud tokens:
 
 ---
 
+## Deployed Link to access Cloud: https://rag-campus-gpt-kcu56w4ltq-uc.a.run.app
+
 ## Recent Improvements & Optimizations
 
 We recently performed a comprehensive codebase quality audit and implemented several performance, stability, and UX optimizations:
