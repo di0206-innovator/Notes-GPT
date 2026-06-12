@@ -4,6 +4,7 @@ import React, { useState } from 'react';
 import { motion } from 'framer-motion';
 import { X, Sliders, Sun, Moon, Database, Trash2, HelpCircle, Activity } from 'lucide-react';
 import { clearLocalStore } from '@/lib/indexed-db-store';
+import { auth } from '@/lib/firebase';
 
 export interface Settings {
   theme: 'dark' | 'light';
@@ -74,9 +75,15 @@ export default function SettingsModal({
     setIsTesting(true);
     setTestStatus({ type: null, message: 'Verifying connection to Ollama server...' });
     try {
+      const headers: Record<string, string> = { 'Content-Type': 'application/json' };
+      const idToken = await auth.currentUser?.getIdToken();
+      if (idToken) {
+        headers['Authorization'] = `Bearer ${idToken}`;
+      }
+
       const response = await fetch('/api/local-ai/ollama', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers,
         body: JSON.stringify({
           action: 'check',
           url: localOllamaUrl,

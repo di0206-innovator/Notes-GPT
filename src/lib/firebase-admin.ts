@@ -3,7 +3,7 @@ import * as admin from 'firebase-admin';
 
 if (!admin.apps.length) {
   admin.initializeApp({
-    projectId: 'studio-9817976701-89717',
+    projectId: process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID || 'studio-9817976701-89717',
   });
 }
 

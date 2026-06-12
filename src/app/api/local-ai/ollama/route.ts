@@ -1,4 +1,5 @@
 import { NextResponse } from 'next/server';
+import { verifySession } from '@/lib/firebase-admin';
 
 /**
  * Next.js App Router POST Handler for Local Ollama AI proxying.
@@ -20,6 +21,14 @@ import { NextResponse } from 'next/server';
  */
 export async function POST(req: Request) {
   try {
+    // 1. Authenticate Request
+    try {
+      await verifySession(req);
+    } catch (authError) {
+      const err = authError as Error;
+      return NextResponse.json({ error: err.message || 'Unauthorized' }, { status: 401 });
+    }
+
     const { action, url, model, systemPrompt, userPrompt, temperature } = await req.json();
     
     if (url) {
@@ -31,6 +40,23 @@ export async function POST(req: Request) {
             { status: 400 }
           );
         }
+
+        // SSRF protection: Restrict custom URLs to loopback addresses in production
+        if (process.env.NODE_ENV === 'production') {
+          const hostname = parsedUrl.hostname.toLowerCase();
+          const isLoopback = 
+            hostname === 'localhost' || 
+            hostname === '127.0.0.1' || 
+            hostname === '[::1]' || 
+            hostname === 'localhost.localdomain';
+            
+          if (!isLoopback) {
+            return NextResponse.json(
+              { error: 'Security restriction: Custom external endpoints are not allowed through the cloud proxy in production.' },
+              { status: 400 }
+            );
+          }
+        }
       } catch {
         return NextResponse.json(
           { error: 'Malformed Ollama URL. Please provide a valid HTTP/HTTPS endpoint.' },
@@ -38,6 +64,7 @@ export async function POST(req: Request) {
         );
       }
     }
+
 
     const baseUrl = (url || 'http://localhost:11434').replace(/\/$/, '');
 

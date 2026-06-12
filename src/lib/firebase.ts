@@ -2,14 +2,25 @@ import { initializeApp, getApps, getApp } from "firebase/app";
 import { getFirestore } from "firebase/firestore";
 import { getAuth } from "firebase/auth";
 
+const hasFirebaseConfig = 
+  process.env.NEXT_PUBLIC_FIREBASE_API_KEY && 
+  process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID;
+
 const firebaseConfig = {
-  apiKey: "AIzaSyAUiHNGILWkGT0uC5CkJ3Edo8y_GDo_bdQ",
-  authDomain: "studio-9817976701-89717.firebaseapp.com",
-  projectId: "studio-9817976701-89717",
-  storageBucket: "studio-9817976701-89717.firebasestorage.app",
-  messagingSenderId: "483878889475",
-  appId: "1:483878889475:web:b50a216f665b3f6fa8c636"
+  apiKey: process.env.NEXT_PUBLIC_FIREBASE_API_KEY || "dummy-api-key",
+  authDomain: process.env.NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN || "dummy-project.firebaseapp.com",
+  projectId: process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID || "dummy-project-id",
+  storageBucket: process.env.NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET || "dummy-project.firebasestorage.app",
+  messagingSenderId: process.env.NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID || "1234567890",
+  appId: process.env.NEXT_PUBLIC_FIREBASE_APP_ID || "1:1234567890:web:dummyappid"
 };
+
+if (!hasFirebaseConfig && typeof window !== 'undefined') {
+  console.warn(
+    "Firebase environment variables are missing. Running in local-only / guest fallback mode.\n" +
+    "To use Cloud Mode, please configure your .env file with your Firebase credentials."
+  );
+}
 
 const app = getApps().length === 0 ? initializeApp(firebaseConfig) : getApp();
 export const db = getFirestore(app);

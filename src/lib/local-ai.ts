@@ -12,6 +12,7 @@
  */
 
 import { saveLocalStudyKit } from './indexed-db-store';
+import { auth } from './firebase';
 
 export interface LocalAIStatus {
   available: boolean;
@@ -133,9 +134,15 @@ export async function getLocalAISupport(passedSettings?: any): Promise<LocalAISt
   // --- Ollama Provider Check ---
   if (provider === 'ollama') {
     try {
+      const headers: Record<string, string> = { 'Content-Type': 'application/json' };
+      const idToken = await auth.currentUser?.getIdToken();
+      if (idToken) {
+        headers['Authorization'] = `Bearer ${idToken}`;
+      }
+
       const response = await fetch('/api/local-ai/ollama', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers,
         body: JSON.stringify({
           action: 'check',
           url: settings.ollamaUrl,
@@ -238,9 +245,15 @@ export async function generateLocalResponse(
   // --- Generate using Ollama ---
   if (provider === 'ollama') {
     onProgress?.(`Querying Ollama (${settings.ollamaModel})...`);
+    const headers: Record<string, string> = { 'Content-Type': 'application/json' };
+    const idToken = await auth.currentUser?.getIdToken();
+    if (idToken) {
+      headers['Authorization'] = `Bearer ${idToken}`;
+    }
+
     const response = await fetch('/api/local-ai/ollama', {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+      headers,
       body: JSON.stringify({
         url: settings.ollamaUrl,
         model: settings.ollamaModel,
