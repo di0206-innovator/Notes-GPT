@@ -173,7 +173,7 @@ export default function ChatPageClient() {
         const idToken = await auth.currentUser?.getIdToken();
         const res = await fetch('/api/study-materials', {
           headers: {
-            'Authorization': `Bearer ${idToken}`,
+            'Authorization': idToken ? `Bearer ${idToken}` : 'Bearer local-guest-user',
           },
         });
         const data = await res.json();
@@ -256,7 +256,7 @@ export default function ChatPageClient() {
         const res = await fetch('/api/study-materials', {
           method: 'POST',
           headers: {
-            'Authorization': `Bearer ${idToken}`,
+            'Authorization': idToken ? `Bearer ${idToken}` : 'Bearer local-guest-user',
           },
         });
         const data = await res.json();
@@ -315,9 +315,26 @@ export default function ChatPageClient() {
     <div className="flex h-screen bg-black overflow-hidden text-white font-mono relative">
       {settings.effectsEnabled && <div className="crt-overlay" />}
 
-      {/* Document Sidebar (collapsible) */}
+      {/* Mobile Backdrop */}
       {showPanel && (
-        <aside className="w-80 border-r-2 border-white bg-black p-4 flex flex-col h-full flex-shrink-0 relative z-10">
+        <div
+          className="fixed inset-0 bg-black/80 z-20 md:hidden backdrop-blur-sm"
+          onClick={() => setShowPanel(false)}
+        />
+      )}
+
+      {/* Document Sidebar (collapsible & responsive) */}
+      {showPanel && (
+        <aside className="fixed inset-y-0 left-0 z-30 w-80 max-w-[85vw] border-r-2 border-white bg-black p-4 flex flex-col h-full flex-shrink-0 md:static md:w-80 md:max-w-none">
+          <div className="flex md:hidden items-center justify-between pb-2 mb-2 border-b border-white/20">
+            <span className="text-[10px] font-bold text-white uppercase">[ DOCUMENTS_DRAWER ]</span>
+            <button
+              onClick={() => setShowPanel(false)}
+              className="retro-button py-0.5 px-2 text-[10px] font-bold"
+            >
+              [ CLOSE ]
+            </button>
+          </div>
           <DocumentPanel
             onGenerateStudyKit={handleGenerateStudyKit}
             isGeneratingStudyKit={isGenerating}
@@ -467,10 +484,10 @@ export default function ChatPageClient() {
               <span className="text-xs text-white animate-flash">[ INITIATING STUDY DESK... ]</span>
             </div>
           ) : !studyKit ? (
-            /* EMPTY STATE: Force full width placeholder & Chat side-by-side */
-            <div className="flex-1 grid lg:grid-cols-2 gap-4 h-full">
+            /* EMPTY STATE: Force full width placeholder & Chat side-by-side or stacked on mobile */
+            <div className="flex-1 flex flex-col lg:grid lg:grid-cols-2 gap-4 h-full overflow-y-auto lg:overflow-hidden">
               {/* Left Placeholder Card */}
-              <div className="flex flex-col items-center justify-center p-8 border-2 border-dashed border-white bg-black text-center">
+              <div className="flex flex-col items-center justify-center p-6 md:p-8 border-2 border-dashed border-white bg-black text-center min-h-[280px]">
                 <div className="w-14 h-14 border-2 border-white flex items-center justify-center text-white mb-6 retro-shadow-black bg-black">
                   <UploadCloud className="w-7 h-7" />
                 </div>
@@ -490,17 +507,17 @@ export default function ChatPageClient() {
               </div>
 
               {/* Right Chat companion */}
-              <div className="h-full min-h-0">
+              <div className="h-full min-h-[350px] lg:min-h-0">
                 <ChatInterface mode={mode} temperature={settings.temperature} topK={settings.topK} settings={settings} />
               </div>
             </div>
           ) : (
             /* WORKSPACE LOADED: Flexible responsive columns */
-            <div className="flex-1 flex gap-4 min-h-0 h-full overflow-hidden relative">
+            <div className="flex-1 flex flex-col lg:flex-row gap-4 min-h-0 h-full overflow-y-auto lg:overflow-hidden relative">
               {/* Workspace column */}
               {(layoutMode === 'workspace' || layoutMode === 'split') && (
-                <div className={`h-full min-h-0 flex flex-col transition-all duration-300 ${
-                  layoutMode === 'split' ? 'w-full lg:w-[55%] flex-shrink-0' : 'w-full'
+                <div className={`min-h-[420px] lg:min-h-0 flex flex-col transition-all duration-300 ${
+                  layoutMode === 'split' ? 'w-full lg:w-[55%] flex-shrink-0' : 'w-full h-full'
                 }`}>
                   <StudyWorkspace
                     studyKit={studyKit}
@@ -512,8 +529,8 @@ export default function ChatPageClient() {
 
               {/* Chat column */}
               {(layoutMode === 'chat' || layoutMode === 'split') && (
-                <div className={`h-full min-h-0 flex flex-col transition-all duration-300 ${
-                  layoutMode === 'split' ? 'w-full lg:w-[45%] flex-shrink-0' : 'w-full'
+                <div className={`min-h-[420px] lg:min-h-0 flex flex-col transition-all duration-300 ${
+                  layoutMode === 'split' ? 'w-full lg:w-[45%] flex-shrink-0' : 'w-full h-full'
                 }`}>
                   <ChatInterface mode={mode} temperature={settings.temperature} topK={settings.topK} settings={settings} />
                 </div>

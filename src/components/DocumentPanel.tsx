@@ -71,7 +71,7 @@ export default function DocumentPanel({
           const idToken = await auth.currentUser?.getIdToken();
           const res = await fetch('/api/documents', {
             headers: {
-              'Authorization': `Bearer ${idToken}`,
+              'Authorization': idToken ? `Bearer ${idToken}` : 'Bearer local-guest-user',
             },
           });
           const data = await res.json();
@@ -193,7 +193,7 @@ export default function DocumentPanel({
         const res = await fetch('/api/documents/upload', {
           method: 'POST',
           headers: {
-            'Authorization': `Bearer ${idToken}`,
+            'Authorization': idToken ? `Bearer ${idToken}` : 'Bearer local-guest-user',
           },
           body: formData,
         });
@@ -244,7 +244,7 @@ export default function DocumentPanel({
           method: 'DELETE',
           headers: {
             'Content-Type': 'application/json',
-            'Authorization': `Bearer ${idToken}`,
+            'Authorization': idToken ? `Bearer ${idToken}` : 'Bearer local-guest-user',
           },
           body: JSON.stringify({ documentId }),
         });

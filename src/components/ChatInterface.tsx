@@ -151,7 +151,7 @@ ${contextText || 'No local document context available.'}
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
-            'Authorization': `Bearer ${idToken}`,
+            'Authorization': idToken ? `Bearer ${idToken}` : 'Bearer local-guest-user',
           },
           signal: controller.signal,
           body: JSON.stringify({ messages: newMessages, temperature, topK }),

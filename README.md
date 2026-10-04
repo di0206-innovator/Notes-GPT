@@ -36,9 +36,11 @@ An AI-powered, offline-capable study companion that transforms your PDFs, textbo
 
 ---
 
-## Setup & Run Instructions
+## Production Deployment
 
-For detailed installation and setup instructions, please see the [CONTRIBUTING.md](CONTRIBUTING.md) guide.
+For deploying the production container to **Google Cloud Run** and configuring enterprise security restrictions (API key whitelists, Firestore security rules, DoS mitigation, and SSRF prevention), see the [Deployment & Security Hardening Guide](docs/DEPLOYMENT.md).
+
+---
 
 ## Setup & Run Instructions
 
