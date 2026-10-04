@@ -255,14 +255,14 @@ export default function Home() {
                     </p>
                     
                     <div className="space-y-2">
-                      <h3 className="font-bold text-green-400">// 1. DOCUMENT INGESTION</h3>
+                      <h3 className="font-bold text-green-400">{"// 1. DOCUMENT INGESTION"}</h3>
                       <p className="text-white/70">
                         Upload PDF textbooks or note images (PNG/JPG). In Local Mode, text is extracted privately in your browser using PDF.js and Tesseract OCR. In Cloud Mode, files are securely parsed on the server using Gemini Generative Vision.
                       </p>
                     </div>
 
                     <div className="space-y-2">
-                      <h3 className="font-bold text-green-400">// 2. COGNITIVE ENGINE MODES</h3>
+                      <h3 className="font-bold text-green-400">{"// 2. COGNITIVE ENGINE MODES"}</h3>
                       <ul className="list-disc pl-4 space-y-1 text-white/70">
                         <li><strong>CLOUD MODE:</strong> Uses Google Gemini 1.5 Flash for high-speed indexing, search embeddings, and complex study kit generations. RAG chunks are stored securely in your private Firestore sandbox.</li>
                         <li><strong>LOCAL MODE (100% PRIVATE):</strong> Runs completely offline. Select from:
@@ -276,7 +276,7 @@ export default function Home() {
                     </div>
 
                     <div className="space-y-2">
-                      <h3 className="font-bold text-green-400">// 3. GENERATED KITS</h3>
+                      <h3 className="font-bold text-green-400">{"// 3. GENERATED KITS"}</h3>
                       <p className="text-white/70">
                         Once compiled, your workspace lists summary notes, LaTeX-supported equations, interactive flip flashcards, practice questions with keys, and print-ready mock exams.
                       </p>
@@ -305,9 +305,9 @@ export default function Home() {
                       NotesGPT treats user privacy as a critical system architecture requirement.
                     </p>
                     <div className="space-y-2 text-white/70">
-                      <p>1. <strong>LOCAL MODE PRIVACY:</strong> When running in Local Mode (Ollama or WebLLM), your documents, chunks, and database records remain entirely inside your browser's IndexedDB and local memory. No data is transmitted to external servers.</p>
+                      <p>1. <strong>LOCAL MODE PRIVACY:</strong> When running in Local Mode (Ollama or WebLLM), your documents, chunks, and database records remain entirely inside your browser&apos;s IndexedDB and local memory. No data is transmitted to external servers.</p>
                       <p>2. <strong>CLOUD MODE PRIVACY:</strong> In Cloud Mode, your uploaded files are securely chunked and indexed in private Firestore databases isolated by your authenticated UID. Network transit is protected via TLS HTTPS encryption, and documents are only processed by Google Gemini APIs to satisfy study kit requests.</p>
-                      <p>3. <strong>WIPING RECORDS:</strong> You retain complete control over your data. You can delete individual documents, or trigger a full purge by clicking "WIPE ALL SYSTEM DATA" in your Profile panel, which instantly clears both IndexedDB and Firestore collections.</p>
+                      <p>3. <strong>WIPING RECORDS:</strong> You retain complete control over your data. You can delete individual documents, or trigger a full purge by clicking &quot;WIPE ALL SYSTEM DATA&quot; in your Profile panel, which instantly clears both IndexedDB and Firestore collections.</p>
                     </div>
                   </div>
                 )}

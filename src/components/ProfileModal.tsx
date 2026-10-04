@@ -39,13 +39,13 @@ export default function ProfileModal({ isOpen, onClose, userId, mode, onLogout }
   useEffect(() => {
     if (!isOpen) return;
 
-    if (isLocalGuest) {
-      setDisplayName(localStorage.getItem('notes_gpt_guest_name') || 'Guest User');
-    } else if (auth.currentUser) {
-      setDisplayName(auth.currentUser.displayName || '');
-    }
-
     const loadStats = async () => {
+      if (isLocalGuest) {
+        setDisplayName(localStorage.getItem('notes_gpt_guest_name') || 'Guest User');
+      } else if (auth.currentUser) {
+        setDisplayName(auth.currentUser.displayName || '');
+      }
+
       setLoadingStats(true);
       try {
         if (mode === 'local' || isLocalGuest) {

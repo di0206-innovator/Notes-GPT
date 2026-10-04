@@ -40,24 +40,41 @@ An AI-powered, offline-capable study companion that transforms your PDFs, textbo
 
 For detailed installation and setup instructions, please see the [CONTRIBUTING.md](CONTRIBUTING.md) guide.
 
-### Quick Start:
+## Setup & Run Instructions
+
+### Quick Start (Localhost):
 
 1. **Clone & Install**:
    ```bash
-   git clone https://github.com/your-username/Rag-Notes-GPT.git
-   cd Rag-Notes-GPT
+   git clone https://github.com/di0206-innovator/Notes-GPT.git
+   cd Notes-GPT
    npm install
    ```
-2. **Environment**:
-   Copy `.env.example` to `.env` and paste your Google Gemini API Key:
+
+2. **Environment (Optional for Local/Guest Mode)**:
+   Copy `.env.example` to `.env.local`:
    ```bash
-   GEMINI_API_KEY=your-gemini-key
+   cp .env.example .env.local
    ```
+   > **Note:** NotesGPT works out-of-the-box on localhost! You can launch immediately without any API keys or Firebase configuration by using **Guest Session** and **Local Mode** (in-browser PDF/OCR parsing, IndexedDB storage, and Ollama/WebLLM inference).
+   >
+   > To enable high-performance **Cloud Mode**, provide your Gemini API key:
+   > ```bash
+   > GEMINI_API_KEY=your_gemini_api_key_here
+   > ```
+
 3. **Run Dev Server**:
    ```bash
    npm run dev
    ```
    Open [http://localhost:3000](http://localhost:3000) in your web browser.
+
+4. **Run Unit Tests & Linter**:
+   ```bash
+   npm test        # Fast automated unit tests for chunker & vector algorithms
+   npm run lint    # ESLint validation
+   npm run build   # Production standalone bundle verification
+   ```
 
 ---
 

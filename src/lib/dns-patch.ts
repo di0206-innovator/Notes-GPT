@@ -3,23 +3,27 @@ import dns from 'dns';
 
 const originalLookup = dns.lookup;
 
-// Monkey-patch dns.lookup to resolve Google API hostnames instantly.
-// This bypasses slow/broken DNS resolvers in the sandbox environment.
+// Enhanced dns.lookup: attempts standard DNS lookup first, falling back to static IP
+// if resolution fails or is blocked in constrained sandbox environments.
 dns.lookup = function (hostname: string, options: any, callback: any) {
+  const cb = typeof options === 'function' ? options : callback;
+  const opts = typeof options === 'object' ? options : {};
+
   if (hostname === 'generativelanguage.googleapis.com') {
-    const ip = '216.239.38.223';
-    const cb = typeof options === 'function' ? options : callback;
-    const opts = typeof options === 'object' ? options : {};
-    
-    if (opts.all) {
-      return cb(null, [{ address: ip, family: 4 }]);
-    }
-    return cb(null, ip, 4);
+    (originalLookup as any).call(dns, hostname, options, (err: any, address: any, family: any) => {
+      if (!err && address) {
+        return cb(null, address, family);
+      }
+      const ip = '216.239.38.223';
+      if (opts.all) {
+        return cb(null, [{ address: ip, family: 4 }]);
+      }
+      return cb(null, ip, 4);
+    });
+    return;
   }
   return (originalLookup as any).call(dns, hostname, options, callback);
 } as any;
-
-console.log('[DNS Patch] Applied instant lookup patch for generativelanguage.googleapis.com');
 
 // Polyfill DOMMatrix globally for server-side environments (Node.js) where pdfjs-dist / pdf-parse requires it
 if (typeof globalThis !== 'undefined' && !(globalThis as any).DOMMatrix) {

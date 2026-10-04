@@ -136,7 +136,12 @@ export default function ChatPageClient() {
       if (user) {
         setUserId(user.uid);
       } else {
-        setUserId(null);
+        const isGuest = typeof window !== 'undefined' && localStorage.getItem('notes_gpt_guest_session') === 'true';
+        if (isGuest) {
+          setUserId('local-guest-user');
+        } else {
+          setUserId(null);
+        }
       }
       setAuthLoading(false);
     });
@@ -280,8 +285,12 @@ export default function ChatPageClient() {
 
   const handleLogout = async () => {
     try {
+      if (typeof window !== 'undefined') {
+        localStorage.removeItem('notes_gpt_guest_session');
+      }
       await clearLocalStore().catch((e) => console.error('IndexedDB clear error:', e));
       await signOut(auth);
+      setUserId(null);
       setStudyKit(null);
     } catch (err) {
       console.error('Logout error:', err);

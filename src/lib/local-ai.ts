@@ -136,9 +136,7 @@ export async function getLocalAISupport(passedSettings?: any): Promise<LocalAISt
     try {
       const headers: Record<string, string> = { 'Content-Type': 'application/json' };
       const idToken = await auth.currentUser?.getIdToken();
-      if (idToken) {
-        headers['Authorization'] = `Bearer ${idToken}`;
-      }
+      headers['Authorization'] = idToken ? `Bearer ${idToken}` : 'Bearer local-guest-user';
 
       const response = await fetch('/api/local-ai/ollama', {
         method: 'POST',
@@ -247,9 +245,7 @@ export async function generateLocalResponse(
     onProgress?.(`Querying Ollama (${settings.ollamaModel})...`);
     const headers: Record<string, string> = { 'Content-Type': 'application/json' };
     const idToken = await auth.currentUser?.getIdToken();
-    if (idToken) {
-      headers['Authorization'] = `Bearer ${idToken}`;
-    }
+    headers['Authorization'] = idToken ? `Bearer ${idToken}` : 'Bearer local-guest-user';
 
     const response = await fetch('/api/local-ai/ollama', {
       method: 'POST',

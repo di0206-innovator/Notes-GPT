@@ -10,7 +10,7 @@ import {
   sendPasswordResetEmail,
   signOut,
 } from 'firebase/auth';
-import { ShieldAlert, Terminal, HelpCircle, Loader2, KeyRound, CheckCircle2 } from 'lucide-react';
+import { ShieldAlert, Terminal, HelpCircle, Loader2, CheckCircle2 } from 'lucide-react';
 
 interface AuthGateProps {
   onAuthenticated: (uid: string) => void;
@@ -79,6 +79,7 @@ export default function AuthGate({ onAuthenticated }: AuthGateProps) {
         }
         
         setFailedAttempts(0);
+        localStorage.removeItem('notes_gpt_guest_session');
         onAuthenticated(user.uid);
       }
     } catch (error) {
@@ -148,10 +149,12 @@ export default function AuthGate({ onAuthenticated }: AuthGateProps) {
     setGuestLoading(true);
     try {
       const userCredential = await signInAnonymously(auth);
+      localStorage.setItem('notes_gpt_guest_session', 'true');
       onAuthenticated(userCredential.user.uid);
     } catch (err) {
       const errorObj = err as Error;
       console.warn('Firebase guest auth failed, falling back to local offline session:', errorObj);
+      localStorage.setItem('notes_gpt_guest_session', 'true');
       onAuthenticated('local-guest-user');
     } finally {
       setGuestLoading(false);

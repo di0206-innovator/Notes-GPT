@@ -155,13 +155,14 @@ export async function ingestOfficeDocument(
 
   console.log(`[RAG] Extracting text from Office file "${filename}"...`);
   
-  // Dynamic import/require to prevent SSR build issues
-  // eslint-disable-next-line @typescript-eslint/no-var-requires
-  const officeParser = require('officeparser');
+  // Dynamic import to prevent SSR build issues
+  const officeParserModule = await import('officeparser');
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const parseFn = (officeParserModule as any).parseOffice || (officeParserModule.default as any)?.parseOffice;
   
   let extractedText = '';
   try {
-    extractedText = await officeParser.parseOfficePromise(buffer);
+    extractedText = (await parseFn(buffer)) as string;
   } catch (err) {
     console.error('[Office Parse Error]', err);
     throw new Error('Failed to extract text from this Office file. Please make sure the file is not corrupted.');
